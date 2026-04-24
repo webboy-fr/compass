@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Political Compass War - V9.3</title>
+  <link rel="stylesheet" href="css/game.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="side-panel">
+      <header class="brand">
+        <div class="brand-icon">🧭</div>
+        <div>
+          <h1>Compass War</h1>
+          <p>Influence les places fortes sans déplacer ton camp.</p>
+        </div>
+      </header>
+
+      <section class="card player-card">
+        <div class="card-title">Ton camp fixe</div>
+        <div id="playerBadge" class="player-badge"></div>
+        <div class="stats-grid">
+          <div><strong id="attackStock">0</strong><span>Énergie</span></div>
+          <div><strong id="defenseStock">+0/s</strong><span>Regen</span></div>
+          <div><strong id="ownedForts">0</strong><span>Forts contrôlés</span></div>
+          <div><strong id="gameTime">0s</strong><span>Temps</span></div>
+        </div>
+      </section>
+
+      <section class="card choose-card" id="ideologyChooser">
+        <div class="card-title">Choisis ton idéologie</div>
+        <p class="hint">Ton point reste ensuite fixé sur la boussole. Tu agis en envoyant de l’influence.</p>
+        <div id="ideologyButtons" class="ideology-buttons"></div>
+      </section>
+
+      <section class="card rules-card">
+        <div class="card-title">Comment jouer</div>
+        <ol>
+          <li>Choisis ton idéologie.</li>
+          <li>Clique sur une place forte 🏰.</li>
+          <li>Choisis une action : influencer, attaquer ou réparer.</li>
+          <li>Ton point ne bouge jamais : seuls les flux d’action partent vers la cible.</li>
+          <li>Les bots envoient aussi leur influence chaque seconde.</li>
+          <li>Il n’y a pas d’objectif final : la partie continue tant qu’il reste des joueurs et des places fortes.</li>
+        </ol>
+        <button id="resetButton" class="secondary">Réinitialiser</button>
+      </section>
+    </aside>
+
+    <main class="main-area">
+      <div class="topbar">
+        <div class="objective"><strong>Objectif :</strong> influencer, déplacer, réparer ou détruire les places fortes. Pas de condition de victoire.</div>
+        <div id="statusText" class="status-text">Choisis ton idéologie.</div>
+      </div>
+
+      <div id="map" class="map" aria-label="Carte politique interactive">
+        <div class="quadrant q-left-top">État + autorité</div>
+        <div class="quadrant q-right-top">Marché + autorité</div>
+        <div class="quadrant q-left-bottom">État + libertés</div>
+        <div class="quadrant q-right-bottom">Marché + libertés</div>
+        <div class="axis x-axis"></div>
+        <div class="axis y-axis"></div>
+        <div class="axis-label left">État</div>
+        <div class="axis-label right">Marché libre</div>
+        <div class="axis-label top">Autorité</div>
+        <div class="axis-label bottom">Libertés publiques</div>
+        <div id="entitiesLayer" class="entities-layer"></div>
+        <div id="projectilesLayer" class="projectiles-layer"></div>
+        <div id="fortActionPanel" class="fort-action-panel hidden"></div>
+      </div>
+
+      <div class="bottom-panel">
+        <section class="card target-card">
+          <div class="card-title">Place forte sélectionnée</div>
+          <div id="targetInfo" class="target-info">Aucune cible. Clique sur une place forte.</div>
+        </section>
+        <section class="card bots-card">
+          <div class="card-title">Bots actifs</div>
+          <div id="botInfo" class="bot-info"></div>
+        </section>
+        <section class="card log-card">
+          <div class="card-title">Journal</div>
+          <div id="eventLog" class="event-log"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/game.js"></script>
+</body>
+</html>
