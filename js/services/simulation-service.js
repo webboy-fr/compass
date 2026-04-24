@@ -31,6 +31,11 @@ class PCWSimulationService {
 
   sendPlayerAction(type) {
     const fort = this.state.getSelectedFort();
+    if (this.state.paused) {
+      this.state.setNotice('Simulation en pause : reprends la partie pour agir.');
+      this.state.addLog('Action ignorée : la simulation est en pause.');
+      return;
+    }
     if (!this.state.started) {
       this.state.setNotice('Choisis d’abord ton idéologie.');
       this.state.addLog('Action impossible : aucune idéologie choisie.');
@@ -198,6 +203,7 @@ class PCWSimulationService {
   }
 
   tick() {
+    if (this.state.paused) return;
     this.state.time += 1;
     if (this.state.started) this.state.player.regenerate();
     this.actorIdeologyDrift();

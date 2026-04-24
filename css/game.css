@@ -721,7 +721,6 @@ body {
 
 .fort-action-panel {
   width: auto;
-  min-width: 132px;
   padding: 7px;
   border-radius: 16px;
   z-index: 80;
@@ -1027,7 +1026,6 @@ body {
 
 .fort-action-panel {
   padding: 8px;
-  min-width: 158px;
 }
 
 .fort-action-panel .panel-actions {
@@ -1248,7 +1246,7 @@ body {
 }
 
 .fort-action-panel {
-  min-width: 150px;
+
   padding: 4px;
   border-radius: 18px;
   background: linear-gradient(180deg, rgba(56,55,52,.98), rgba(19,19,20,.98));
@@ -1258,16 +1256,16 @@ body {
 }
 
 .fort-action-panel .panel-actions.sprite-actions {
-  display: grid;
+  /*display: grid;
   grid-template-columns: repeat(3, 48px);
-  gap: 0;
+  gap: 0;*/
 }
 
 .fort-action-panel .panel-actions.sprite-actions button {
   position: relative;
   display: grid;
   place-items: center;
-  width: 48px;
+  width: 30px;
   height: 50px;
   min-width: 0;
   padding: 2px;
@@ -1322,4 +1320,143 @@ body {
 .fort-action-panel .panel-actions button[data-action="attack-fort"]::before,
 .fort-action-panel .panel-actions button[data-action="repair-fort"]::before {
   content: none;
+}
+
+
+/* Pause mode */
+.pause-button {
+  background: linear-gradient(135deg, rgba(255, 209, 102, .92), rgba(255, 122, 61, .86));
+  color: #15100a;
+}
+
+.pause-button.is-paused {
+  background: linear-gradient(135deg, #2fd37c, #36dce8);
+  color: #061018;
+}
+
+body.game-paused .map::after {
+  content: "PAUSE";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  z-index: 80;
+  color: rgba(255,255,255,.24);
+  font-size: clamp(42px, 9vw, 96px);
+  font-weight: 1000;
+  letter-spacing: .16em;
+  pointer-events: none;
+  text-shadow: 0 0 18px rgba(0,0,0,.5);
+}
+
+body.game-paused .projectile-token {
+  animation-play-state: paused;
+}
+
+/* V10.8 projectile targeting + stable action-panel click area. */
+.fort-token {
+  /* The fort logical coordinate now matches the exact center of the sprite image. */
+  transform: translate(-50%, -26px) !important;
+  margin-left: 0 !important;
+  margin-top: 0 !important;
+}
+
+.fort-token .fort-core {
+  margin: 0 auto !important;
+}
+
+.fort-token::before {
+  left: 18px !important;
+  top: -6px !important;
+  width: 52px !important;
+  height: 64px !important;
+}
+
+.fort-action-panel,
+.fort-action-panel *,
+.fort-token,
+.fort-token * {
+  pointer-events: auto;
+}
+
+.projectile-token {
+  display: grid;
+  place-items: center;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: currentColor;
+  color: currentColor;
+  box-shadow: 0 0 12px currentColor, 0 0 26px currentColor;
+  transform: translate(-50%, -50%);
+  line-height: 1;
+  opacity: .96;
+}
+
+.projectile-token::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  transform: translate(-50%, -50%);
+  background: currentColor;
+  opacity: .14;
+  filter: blur(3px);
+}
+
+.projectile-token.influence {
+  width: 10px;
+  height: 10px;
+  border: 2px solid rgba(255,255,255,.88);
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.projectile-token.attack {
+  width: 0;
+  height: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.projectile-token.attack::before {
+  content: "➤";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(var(--projectile-angle, 0rad));
+  color: currentColor;
+  font-size: 20px;
+  font-weight: 1000;
+  line-height: 1;
+  text-shadow: 0 0 8px currentColor, 0 0 20px currentColor;
+}
+
+.projectile-token.attack::after {
+  width: 22px;
+  height: 8px;
+  border-radius: 999px;
+  opacity: .16;
+}
+
+.projectile-token.repair {
+  width: 18px;
+  height: 18px;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #ff6f91;
+  font-size: 18px;
+  font-weight: 1000;
+  text-shadow: 0 0 8px rgba(255, 111, 145, .95), 0 0 18px rgba(255, 111, 145, .55);
+}
+
+.projectile-token.repair::after {
+  width: 20px;
+  height: 20px;
+  opacity: .10;
 }

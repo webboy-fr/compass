@@ -5,6 +5,7 @@ class PCWGameState {
   constructor(data, config) {
     this.config = config;
     this.started = data.started || false;
+    this.paused = Boolean(data.paused);
     this.destructionModal = data.destructionModal || null;
     this.time = data.time || 0;
     this.selectedFortId = data.selectedFortId || null;
@@ -21,6 +22,7 @@ class PCWGameState {
   static createInitial(config) {
     return new PCWGameState({
       started: false,
+      paused: false,
       destructionModal: null,
       time: 0,
       selectedFortId: null,

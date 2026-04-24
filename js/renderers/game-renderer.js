@@ -16,6 +16,7 @@ class PCWGameRenderer {
       ideologyButtons: document.getElementById('ideologyButtons'),
       playerBadge: document.getElementById('playerBadge'),
       resetButton: document.getElementById('resetButton'),
+      pauseButton: document.getElementById('pauseButton'),
       statusText: document.getElementById('statusText'),
       targetInfo: document.getElementById('targetInfo'),
       eventLog: document.getElementById('eventLog'),
@@ -170,7 +171,10 @@ class PCWGameRenderer {
         <strong></strong>
         <small><span class="heart">♥</span> <span class="fort-hp-text"></span> · <span class="fort-score-text"></span></small>
       </span>`;
-    el.addEventListener('click', () => this.onSelectFort(fort.id));
+    el.addEventListener('click', (event) => {
+      event.stopPropagation();
+      this.onSelectFort(fort.id);
+    });
     return el;
   }
 
@@ -228,6 +232,17 @@ class PCWGameRenderer {
         el.style.left = `${this.toPxX(projectile.x)}px`;
         el.style.top = `${this.toPxY(projectile.y)}px`;
         el.style.color = ideology.color;
+        const targetFort = this.state.getFort(projectile.fortId);
+        if (targetFort) {
+          const angle = Math.atan2(
+            this.toPxY(targetFort.y) - this.toPxY(projectile.y),
+            this.toPxX(targetFort.x) - this.toPxX(projectile.x)
+          );
+          el.style.setProperty('--projectile-angle', `${angle}rad`);
+        }
+        el.setAttribute('aria-label', projectile.type);
+        if (projectile.type === 'repair' && el.textContent !== '♥') el.textContent = '♥';
+        if (projectile.type !== 'repair' && el.textContent) el.textContent = '';
       },
       this.elements.projectilesLayer
     );
@@ -280,8 +295,8 @@ class PCWGameRenderer {
 
   positionFortActionPanel(selected) {
     const panel = this.elements.fortActionPanel;
-    const mapPadding = 12;
-    const anchorGap = 16;
+    const mapPadding = 0;
+    const anchorGap = 60;
     const anchorX = this.toPxX(selected.x);
     const anchorY = this.toPxY(selected.y);
     panel.style.visibility = 'hidden';
@@ -297,13 +312,25 @@ class PCWGameRenderer {
     const rawTop = placeAbove ? anchorY - panelHeight - anchorGap : anchorY + anchorGap;
     const top = PCWMath.clamp(rawTop, mapPadding, Math.max(mapPadding, this.elements.map.clientHeight - panelHeight - mapPadding));
     panel.dataset.side = placeAbove ? 'top' : 'bottom';
-    panel.style.left = `${left}px`;
+    panel.style.left = `${left-30}px`;
     panel.style.top = `${top}px`;
     panel.style.visibility = 'visible';
   }
 
+  renderPauseState() {
+    const isPaused = Boolean(this.state.paused);
+    document.body.classList.toggle('game-paused', isPaused);
+
+    if (!this.elements.pauseButton) return;
+
+    this.elements.pauseButton.classList.toggle('is-paused', isPaused);
+    this.elements.pauseButton.textContent = isPaused ? '▶ Reprendre' : '⏸ Pause';
+    this.elements.pauseButton.setAttribute('aria-pressed', isPaused ? 'true' : 'false');
+  }
+
   renderPanels() {
     const selected = this.state.getSelectedFort();
+    this.renderPauseState();
     const owned = this.state.countOwnedForts();
     this.elements.playerBadge.innerHTML = `<span class="player-dot-preview" style="background:${this.state.player.color}; color:${this.state.player.color}"></span><div><strong>${this.state.player.name}</strong><br><span>${this.state.player.ideologyName}</span></div>`;
     this.renderCompassControls();

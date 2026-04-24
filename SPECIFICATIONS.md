@@ -231,3 +231,19 @@ Expected behavior: no intentional gameplay, layout, CSS or balancing changes in 
 - The selected fort action panel is compact and displays three game-like action buttons: I / A / R.
 - Fort stats are shown below the sprite with a small dark nameplate and HP/value line.
 - No gameplay balancing changes were intentionally introduced in this pass.
+
+## v10 pause mode
+
+- Added a pause/reprise control in the left rules panel.
+- When paused, the simulation timer no longer increments.
+- When paused, bot turns, bot exchanges, natural fort drift, ideology drift and projectile movement are frozen.
+- Manual fort selection remains possible, but player actions are ignored until the simulation is resumed.
+- A large non-interactive PAUSE overlay is shown over the map while paused.
+- Existing DOM cache behavior is preserved: entities are not rebuilt every frame.
+
+## Patch - map click deselect
+
+- Clicking on the map outside a `.fort-token` deselects the current fort.
+- Clicking a fort keeps/selects that fort.
+- Clicking inside `#fortActionPanel` does not deselect the current fort.
+- Pause mode still freezes state/render updates for debugging.
