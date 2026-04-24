@@ -54,7 +54,8 @@
         <div id="statusText" class="status-text">Choisis ton idéologie.</div>
       </div>
 
-      <div id="map" class="map" aria-label="Carte politique interactive">
+      <div class="map-frame">
+        <div id="map" class="map" aria-label="Carte politique interactive">
         <div class="quadrant q-left-top">État + autorité</div>
         <div class="quadrant q-right-top">Marché + autorité</div>
         <div class="quadrant q-left-bottom">État + libertés</div>
@@ -68,25 +69,38 @@
         <div id="entitiesLayer" class="entities-layer"></div>
         <div id="projectilesLayer" class="projectiles-layer"></div>
         <div id="fortActionPanel" class="fort-action-panel hidden"></div>
-      </div>
-
-      <div class="bottom-panel">
-        <section class="card target-card">
-          <div class="card-title">Place forte sélectionnée</div>
-          <div id="targetInfo" class="target-info">Aucune cible. Clique sur une place forte.</div>
-        </section>
-        <section class="card bots-card">
-          <div class="card-title">Bots actifs</div>
-          <div id="botInfo" class="bot-info"></div>
-        </section>
-        <section class="card log-card">
-          <div class="card-title">Journal</div>
-          <div id="eventLog" class="event-log"></div>
-        </section>
+        </div>
       </div>
     </main>
+
+    <aside class="right-panel">
+      <section class="card target-card">
+        <div class="card-title">Place forte survolée</div>
+        <div id="targetInfo" class="target-info">Aucune cible. Survole une place forte.</div>
+      </section>
+      <section class="card bots-card">
+        <div class="card-title">Bots actifs</div>
+        <div id="botInfo" class="bot-info"></div>
+      </section>
+      <section class="card log-card">
+        <div class="card-title">Journal</div>
+        <div id="eventLog" class="event-log"></div>
+      </section>
+    </aside>
   </div>
 
-  <script src="js/game.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/utils/math.js"></script>
+  <script src="js/models/actor.js"></script>
+  <script src="js/models/user.js"></script>
+  <script src="js/models/bot.js"></script>
+  <script src="js/models/fort.js"></script>
+  <script src="js/models/projectile.js"></script>
+  <script src="js/models/game-state.js"></script>
+  <script src="js/services/storage-service.js"></script>
+  <script src="js/services/simulation-service.js"></script>
+  <script src="js/renderers/game-renderer.js"></script>
+  <script src="js/controllers/game-controller.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>

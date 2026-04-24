@@ -172,3 +172,46 @@ Clé localStorage :
 - Les places fortes ne réapparaissent pas après destruction.
 - Il n’y a pas encore de ressources séparées pour influence, attaque et réparation.
 - Il n’y a pas encore de vraie notion d’alliance.
+
+## V9.4 Layout 3 colonnes + survol des places fortes
+
+- Rebase strict depuis `v9.zip`.
+- Layout en 3 colonnes : panneau joueur à gauche, carte fixe 1024x1024 au centre, panneau informations à droite.
+- Les anciennes informations du bas sont déplacées dans la colonne de droite.
+- La carte ne dépend plus d'une taille relative : largeur et hauteur fixes à 1024px.
+- Les places fortes disposent d'une zone transparente large autour de l'icône et du texte.
+- Le survol d'une zone de place forte sélectionne automatiquement la place forte.
+- Les détails complets de la place forte survolée s'affichent dans la colonne de droite.
+- Le mini panneau flottant sur la carte ne contient plus que trois petits boutons d'action : influencer, attaquer, réparer.
+- Le clic sur une place forte reste conservé comme fallback pour les écrans tactiles ou les usages anciens.
+
+## V9.5 layout / destruction notes
+
+- The center topbar is hidden; the center column contains only the map.
+- The map scales as a square inside the available center column and uses the full viewport height when possible.
+- Destroyed forts no longer open any destruction modal.
+- When a fort reaches 0 HP, its hover/action panel closes, a short collapse/explosion animation appears at its last position, and a single log line is added.
+- Any projectiles still targeting a destroyed fort are removed immediately.
+
+## V9.6 refactoring pass
+
+Goal: keep the existing working gameplay and layout, but stop keeping all JavaScript in a single file.
+
+Structure:
+- `js/config.js`: constants, ideologies, fort templates and bot definitions.
+- `js/utils/math.js`: clamp/random helpers.
+- `js/models/actor.js`: shared actor base class.
+- `js/models/user.js`: human player class.
+- `js/models/bot.js`: active bot class.
+- `js/models/fort.js`: fort / place forte class.
+- `js/models/projectile.js`: projectile animation class.
+- `js/models/game-state.js`: state factory, hydration and state helpers.
+- `js/services/storage-service.js`: localStorage persistence.
+- `js/services/simulation-service.js`: gameplay rules, bots, projectiles, influence, attack, repair and destruction.
+- `js/renderers/game-renderer.js`: all DOM rendering.
+- `js/controllers/game-controller.js`: events, main loop and wiring.
+- `js/app.js`: bootstrap.
+
+Compatibility choice: scripts are loaded as classic browser scripts instead of ES modules, so the prototype can still be opened directly from `index.html` without a dev server.
+
+Expected behavior: no intentional gameplay, layout, CSS or balancing changes in this pass.
