@@ -39,10 +39,17 @@ class PCWGameState {
     const bots = [];
     for (let i = 0; i < 50; i += 1) {
       const ideology = config.ideologies[i % config.ideologies.length];
+      const x = PCWMath.clamp(ideology.x + PCWMath.random(-22, 22), -95, 95);
+      const y = PCWMath.clamp(ideology.y + PCWMath.random(-22, 22), -95, 95);
       bots.push({
         id: `passive_${i}`,
-        x: PCWMath.clamp(ideology.x + PCWMath.random(-22, 22), -95, 95),
-        y: PCWMath.clamp(ideology.y + PCWMath.random(-22, 22), -95, 95),
+        ideologyId: ideology.id,
+        x,
+        y,
+        market: x,
+        authority: y,
+        baseMarket: ideology.x,
+        baseAuthority: ideology.y,
         color: ideology.color
       });
     }

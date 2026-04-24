@@ -2,11 +2,14 @@
  * Global game configuration and seed data.
  */
 window.PCWConfig = {
-  storageKey: 'political_compass_war_v9_3_more_players_forts_refactored',
+  storageKey: 'political_compass_war_v10_compact_forts_slow_bots',
   tickMs: 1000,
   maxInfluence: 100,
   maxHp: 100,
   moveFactor: 0.045,
+  botIdeologyDrift: 0.75,
+  botIdeologyDriftChance: 0.18,
+  botActionChance: 0.34,
   projectileMinSpeed: 115,
   projectileMaxSpeed: 170,
   ideologies: [

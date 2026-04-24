@@ -12,7 +12,13 @@ class PCWSimulationService {
     this.state.selectedFortId = null;
     this.state.setNotice('');
     this.state.player = PCWUser.fromIdeology(ideology);
-    this.state.addLog(`Tu joues ${ideology.name}. Ton point reste fixe.`);
+    this.state.addLog(`Tu joues ${ideology.name}. Ajuste tes curseurs Marché/Autorité pour déplacer ton point.`);
+  }
+
+  setPlayerCompassPosition(market, authority) {
+    if (!this.state.started) return;
+    this.state.player.setCompassPosition(market, authority);
+    this.state.setNotice(`Position ajustée : marché ${Math.round(this.state.player.market)}, autorité ${Math.round(this.state.player.authority)}.`);
   }
 
   selectFort(fortId) {
@@ -139,13 +145,16 @@ class PCWSimulationService {
     if (!this.state.started || !this.state.forts.length) return;
     this.state.activeBots.forEach((bot) => {
       if (!bot.shouldPlayTurn()) return;
+      if (Math.random() > (this.config.botActionChance ?? 0.45)) return;
       const target = this.chooseBotTarget(bot);
       if (!target) return;
       bot.targetFortId = target.id;
       const ideology = this.state.getIdeology(bot.ideologyId);
       let type = bot.mode;
-      if (bot.mode === 'repair' && target.hp > 75) type = 'influence';
+      if (bot.mode === 'repair' && target.hp > 75) type = Math.random() < 0.20 ? 'attack' : 'influence';
+      if (bot.mode === 'influence' && Math.random() < 0.08) type = 'attack';
       if (bot.mode === 'attack' && target.ownerIdeologyId === bot.ideologyId) type = 'influence';
+      if (type === 'attack' && Math.random() < 0.35) type = 'influence';
       const amount = type === 'influence' ? ideology.influencePower : type === 'attack' ? ideology.attackPower : ideology.repairPower;
       this.createProjectile(bot.id, target.id, type, amount);
     });
@@ -171,9 +180,27 @@ class PCWSimulationService {
     this.state.forts.forEach((fort) => fort.drift(this.config.maxInfluence));
   }
 
+  actorIdeologyDrift() {
+    const maxStep = this.config.botIdeologyDrift || 0.75;
+    const driftChance = this.config.botIdeologyDriftChance ?? 0.18;
+    this.state.activeBots.forEach((bot) => {
+      if (Math.random() <= driftChance) bot.driftIdeology(maxStep);
+    });
+    this.state.passiveBots.forEach((bot) => {
+      if (Math.random() > driftChance) return;
+      const nextMarket = PCWMath.clamp((bot.market ?? bot.x) + PCWMath.random(-maxStep, maxStep), (bot.baseMarket ?? bot.x) - 18, (bot.baseMarket ?? bot.x) + 18);
+      const nextAuthority = PCWMath.clamp((bot.authority ?? bot.y) + PCWMath.random(-maxStep, maxStep), (bot.baseAuthority ?? bot.y) - 18, (bot.baseAuthority ?? bot.y) + 18);
+      bot.market = PCWMath.clamp(nextMarket, -100, 100);
+      bot.authority = PCWMath.clamp(nextAuthority, -100, 100);
+      bot.x = bot.market;
+      bot.y = bot.authority;
+    });
+  }
+
   tick() {
     this.state.time += 1;
     if (this.state.started) this.state.player.regenerate();
+    this.actorIdeologyDrift();
     this.playBots();
     this.fortNaturalDrift();
   }

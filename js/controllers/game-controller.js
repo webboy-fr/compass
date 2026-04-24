@@ -25,12 +25,21 @@ class PCWGameController {
   bindEvents() {
     this.renderer.elements.resetButton.addEventListener('click', () => this.resetGame());
     this.renderer.elements.fortActionPanel.addEventListener('click', (event) => this.handleFortActionClick(event));
+    this.renderer.elements.marketSlider.addEventListener('input', () => this.updatePlayerCompass());
+    this.renderer.elements.authoritySlider.addEventListener('input', () => this.updatePlayerCompass());
     document.body.addEventListener('click', (event) => this.closeDestructionModal(event));
     window.addEventListener('resize', () => this.renderer.render());
   }
 
   chooseIdeology(ideology) {
     this.simulation.chooseIdeology(ideology);
+    this.saveAndRender();
+  }
+
+  updatePlayerCompass() {
+    const market = Number(this.renderer.elements.marketSlider.value);
+    const authority = Number(this.renderer.elements.authoritySlider.value);
+    this.simulation.setPlayerCompassPosition(market, authority);
     this.saveAndRender();
   }
 
@@ -68,6 +77,7 @@ class PCWGameController {
     this.state = PCWGameState.createInitial(this.config);
     this.simulation.state = this.state;
     this.renderer.state = this.state;
+    this.renderer.resetDomCache();
     this.saveAndRender();
   }
 

@@ -215,3 +215,19 @@ Structure:
 Compatibility choice: scripts are loaded as classic browser scripts instead of ES modules, so the prototype can still be opened directly from `index.html` without a dev server.
 
 Expected behavior: no intentional gameplay, layout, CSS or balancing changes in this pass.
+
+
+## V10.1 - Sliders without adaptive zoom
+
+- The market/state and liberty/authority sliders are preserved.
+- User and bot positions still move on the political compass.
+- Adaptive zoom/camera resizing has been removed because it made the map feel unstable.
+- The compass now stays on a fixed -100/+100 coordinate frame.
+
+## V10.4 - Sprite forts / mockup-inspired action panel
+
+- Fort rendering now uses `assets/fort-sprite.svg` instead of the plain emoji marker.
+- Forts keep click selection behavior for mobile compatibility.
+- The selected fort action panel is compact and displays three game-like action buttons: I / A / R.
+- Fort stats are shown below the sprite with a small dark nameplate and HP/value line.
+- No gameplay balancing changes were intentionally introduced in this pass.

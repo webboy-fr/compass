@@ -11,6 +11,10 @@ class PCWUser extends PCWActor {
       color: '#ffffff',
       x: 0,
       y: 0,
+      market: 0,
+      authority: 0,
+      baseMarket: 0,
+      baseAuthority: 0,
       energy: 0,
       influencePower: 0,
       attackPower: 0,
@@ -28,12 +32,23 @@ class PCWUser extends PCWActor {
       color: ideology.color,
       x: ideology.x,
       y: ideology.y,
+      market: ideology.x,
+      authority: ideology.y,
+      baseMarket: ideology.x,
+      baseAuthority: ideology.y,
       energy: 45,
       influencePower: ideology.influencePower,
       attackPower: ideology.attackPower,
       repairPower: ideology.repairPower,
       regen: ideology.regen
     });
+  }
+
+  setCompassPosition(market, authority) {
+    this.market = PCWMath.clamp(Number(market), -100, 100);
+    this.authority = PCWMath.clamp(Number(authority), -100, 100);
+    this.x = this.market;
+    this.y = this.authority;
   }
 
   regenerate() {

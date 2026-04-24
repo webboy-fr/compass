@@ -13,13 +13,26 @@
         <div class="brand-icon">🧭</div>
         <div>
           <h1>Compass War</h1>
-          <p>Influence les places fortes sans déplacer ton camp.</p>
+          <p>Influence les places fortes en ajustant ton point politique.</p>
         </div>
       </header>
 
       <section class="card player-card">
         <div class="card-title">Ton camp fixe</div>
         <div id="playerBadge" class="player-badge"></div>
+        <div class="compass-controls" id="compassControls">
+          <label>
+            <span>Marché ↔ État</span>
+            <input id="marketSlider" type="range" min="-100" max="100" value="0" step="1" disabled>
+            <strong id="marketValue">0</strong>
+          </label>
+          <label>
+            <span>Libertés ↔ Autorité</span>
+            <input id="authoritySlider" type="range" min="-100" max="100" value="0" step="1" disabled>
+            <strong id="authorityValue">0</strong>
+          </label>
+          <small id="viewportInfo">Les curseurs déplacent ton point sur la carte.</small>
+        </div>
         <div class="stats-grid">
           <div><strong id="attackStock">0</strong><span>Énergie</span></div>
           <div><strong id="defenseStock">+0/s</strong><span>Regen</span></div>
@@ -30,7 +43,7 @@
 
       <section class="card choose-card" id="ideologyChooser">
         <div class="card-title">Choisis ton idéologie</div>
-        <p class="hint">Ton point reste ensuite fixé sur la boussole. Tu agis en envoyant de l’influence.</p>
+        <p class="hint">Tu choisis une famille politique, puis tu ajustes ton point avec les deux curseurs.</p>
         <div id="ideologyButtons" class="ideology-buttons"></div>
       </section>
 
@@ -38,9 +51,10 @@
         <div class="card-title">Comment jouer</div>
         <ol>
           <li>Choisis ton idéologie.</li>
+          <li>Ajuste tes curseurs Marché/Autorité si besoin.</li>
           <li>Clique sur une place forte 🏰.</li>
           <li>Choisis une action : influencer, attaquer ou réparer.</li>
-          <li>Ton point ne bouge jamais : seuls les flux d’action partent vers la cible.</li>
+          <li>Ton point peut bouger : les projectiles partent depuis ta position réelle.</li>
           <li>Les bots envoient aussi leur influence chaque seconde.</li>
           <li>Il n’y a pas d’objectif final : la partie continue tant qu’il reste des joueurs et des places fortes.</li>
         </ol>
@@ -75,8 +89,12 @@
 
     <aside class="right-panel">
       <section class="card target-card">
-        <div class="card-title">Place forte survolée</div>
-        <div id="targetInfo" class="target-info">Aucune cible. Survole une place forte.</div>
+        <div class="card-title">Place forte sélectionnée</div>
+        <div id="targetInfo" class="target-info">Aucune cible. Clique sur une place forte.</div>
+      </section>
+      <section class="card influence-chart-card">
+        <div class="card-title">Influence globale</div>
+        <div id="influenceChart" class="influence-chart"></div>
       </section>
       <section class="card bots-card">
         <div class="card-title">Bots actifs</div>

@@ -9,6 +9,10 @@ class PCWMath {
   static random(min, max) {
     return Math.random() * (max - min) + min;
   }
+
+  static lerp(start, end, amount) {
+    return start + (end - start) * amount;
+  }
 }
 
 window.PCWMath = PCWMath;
