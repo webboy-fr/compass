@@ -25,13 +25,14 @@ class PCWAuthService {
     if (!token) return null;
 
     const response = await fetch(`${this.authApiUrl}?action=me&token=${encodeURIComponent(token)}`, { cache: 'no-store' });
-    if (!response.ok) {
+    const payload = await PCWApiResponseParser.parse(response, 'Auth API');
+
+    if (!response.ok || !payload.authenticated) {
       this.clearToken();
       return null;
     }
 
-    const payload = await PCWApiResponseParser.parse(response, 'Auth API');
-    return payload.authenticated ? payload.player : null;
+    return payload.player;
   }
 
   async login(name, password) {
@@ -52,6 +53,10 @@ class PCWAuthService {
     if (!response.ok || payload.error) {
       throw new Error(payload.error || 'Erreur d’authentification.');
     }
+    if (!payload.token) {
+      throw new Error('Token manquant après authentification.');
+    }
+
     this.setToken(payload.token);
     return payload.player;
   }
@@ -102,9 +107,10 @@ class PCWAuthService {
       submitButton.disabled = true;
       message.textContent = 'Connexion en cours…';
       try {
-        const player = mode === 'register' ? await auth.register(name, password) : await auth.login(name, password);
+        const isNewPlayer = mode === 'register';
+        const player = isNewPlayer ? await auth.register(name, password) : await auth.login(name, password);
         overlay.classList.add('hidden');
-        await onAuthenticated(player);
+        await onAuthenticated(player, { isNewPlayer });
       } catch (error) {
         message.textContent = error.message;
       } finally {

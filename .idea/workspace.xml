@@ -5,18 +5,24 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="0877ea7f-a949-41dd-8b49-fc801b01ea53" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/php.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SPECIFICATIONS.md" beforeDir="false" afterPath="$PROJECT_DIR$/SPECIFICATIONS.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/admin/admin.css" beforeDir="false" afterPath="$PROJECT_DIR$/admin/admin.css" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/api/auth.php" beforeDir="false" afterPath="$PROJECT_DIR$/api/auth.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/api/bootstrap.php" beforeDir="false" afterPath="$PROJECT_DIR$/api/bootstrap.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config.example.php" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/config.php" beforeDir="false" afterPath="$PROJECT_DIR$/config.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api/state.php" beforeDir="false" afterPath="$PROJECT_DIR$/api/state.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/css/game.css" beforeDir="false" afterPath="$PROJECT_DIR$/css/game.css" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/js/app.js" beforeDir="false" afterPath="$PROJECT_DIR$/js/app.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/js/controllers/game-controller.js" beforeDir="false" afterPath="$PROJECT_DIR$/js/controllers/game-controller.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/js/models/user.js" beforeDir="false" afterPath="$PROJECT_DIR$/js/models/user.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/js/renderers/game-renderer.js" beforeDir="false" afterPath="$PROJECT_DIR$/js/renderers/game-renderer.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/js/services/auth-service.js" beforeDir="false" afterPath="$PROJECT_DIR$/js/services/auth-service.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/js/services/chat-service.js" beforeDir="false" afterPath="$PROJECT_DIR$/js/services/chat-service.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/js/services/config-loader.js" beforeDir="false" afterPath="$PROJECT_DIR$/js/services/config-loader.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/js/services/simulation-service.js" beforeDir="false" afterPath="$PROJECT_DIR$/js/services/simulation-service.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/js/services/storage-service.js" beforeDir="false" afterPath="$PROJECT_DIR$/js/services/storage-service.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tools/migrate.php" beforeDir="false" afterPath="$PROJECT_DIR$/tools/migrate.php" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

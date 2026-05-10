@@ -14,6 +14,7 @@ require_once __DIR__ . '/bootstrap.php';
  * @return array<string, mixed>
  */
 function pcw_player_to_state(PDO $db, array $player): array {
+    $ideologyweights = pcw_decode_ideology_weights($player['ideology_weights'] ?? null);
     $ideology = null;
     if (!empty($player['ideology_id'])) {
         $stmt = $db->prepare('SELECT id, name, color, x, y, influence_power, attack_power, repair_power, regen, move_speed FROM pcw_ideologies WHERE id = :id LIMIT 1');
@@ -34,6 +35,7 @@ function pcw_player_to_state(PDO $db, array $player): array {
         'name' => $player['name'],
         'ideologyId' => $player['ideology_id'] ?: null,
         'ideologyName' => $ideology ? $ideology['name'] : 'Non choisi',
+        'ideologyWeights' => $ideologyweights,
         'color' => $ideology ? $ideology['color'] : ($player['color'] ?: '#ffffff'),
         'x' => (float)$player['x'],
         'y' => (float)$player['y'],
@@ -164,9 +166,10 @@ function pcw_update_current_player(PDO $db, array $playerrow, array $stateplayer
         $classid = $requestedclassid;
     }
 
-    $stmt = $db->prepare('UPDATE pcw_players SET ideology_id = :ideology_id, class_id = :class_id, color = :color, x = :x, y = :y, energy = :energy, updated_at = NOW() WHERE id = :id');
+    $stmt = $db->prepare('UPDATE pcw_players SET ideology_id = :ideology_id, ideology_weights = :ideology_weights, class_id = :class_id, color = :color, x = :x, y = :y, energy = :energy, updated_at = NOW() WHERE id = :id');
     $stmt->execute([
         'ideology_id' => pcw_string($stateplayer['ideologyId'] ?? '', '', 64) ?: null,
+        'ideology_weights' => pcw_encode_ideology_weights($stateplayer['ideologyWeights'] ?? []),
         'class_id' => $classid,
         'color' => pcw_string($stateplayer['color'] ?? '#ffffff', '#ffffff', 20),
         'x' => pcw_float($stateplayer['x'] ?? 0, 0, -100, 100),
@@ -207,7 +210,7 @@ try {
             $state['humanPlayers'] = pcw_get_human_players($db);
             $state['selectedFortId'] = null;
             $state['notice'] = '';
-            $state['started'] = !empty($currentplayer['ideologyId']);
+            $state['started'] = !empty($currentplayer['ideologyId']) || array_sum(array_map('intval', $currentplayer['ideologyWeights'] ?? [])) > 0;
         }
 
         pcw_json_response([

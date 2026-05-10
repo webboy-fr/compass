@@ -358,3 +358,13 @@ Fresh installations can use `sql/schema.sql` and `sql/seed.sql` directly.
 - Maximum 20 messages conservés.
 - Endpoint unique `api/chat.php` pour lire et envoyer.
 - Migration : `sql/upgrade_chat.sql`.
+
+## Player ideology point profile
+
+- The player profile modal is the required setup screen after creating a player.
+- A player must distribute exactly 10 points across the available ideologies.
+- Each ideology can receive 0 to 10 points through dot controls in the profile modal.
+- The dominant ideology gives the player color and primary label.
+- Player coordinates and gameplay stats are computed as a weighted blend of selected ideologies.
+- The selected distribution is persisted in `pcw_players.ideology_weights` as JSON.
+- The player must also choose a class before closing the mandatory profile modal.

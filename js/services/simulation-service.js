@@ -20,6 +20,24 @@ class PCWSimulationService {
     this.state.addLog(`Tu joues ${ideology.name}. Ajuste tes curseurs Marché/Autorité pour déplacer ton point.`);
   }
 
+  setPlayerIdeologyWeights(weights) {
+    this.ensureState();
+    const safeWeights = weights && typeof weights === 'object' ? weights : {};
+    const total = Object.values(safeWeights).reduce((sum, value) => sum + Math.max(0, Number(value) || 0), 0);
+
+    this.state.started = total > 0;
+    this.state.player.setIdeologyWeights(safeWeights, this.config.ideologies || []);
+
+    if (total === 10) {
+      this.state.setNotice(`Profil idéologique enregistré : ${this.state.player.ideologyName}.`);
+      this.state.addLog(`🧭 Profil idéologique : ${this.state.player.ideologyName}.`);
+      return true;
+    }
+
+    this.state.setNotice(`Répartis exactement 10 points. Total actuel : ${total}/10.`);
+    return false;
+  }
+
   choosePlayerClass(playerClass) {
     if (!playerClass) return;
     if (this.state.player.playerClass) {

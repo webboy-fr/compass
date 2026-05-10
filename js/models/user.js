@@ -8,6 +8,7 @@ class PCWUser extends PCWActor {
       name: 'TOI',
       ideologyId: null,
       ideologyName: 'Non choisi',
+      ideologyWeights: {},
       color: '#ffffff',
       x: 0,
       y: 0,
@@ -35,6 +36,7 @@ class PCWUser extends PCWActor {
       name: currentPlayer?.name || 'TOI',
       ideologyId: ideology.id,
       ideologyName: ideology.name,
+      ideologyWeights: currentPlayer?.ideologyWeights || { [ideology.id]: 10 },
       color: ideology.color,
       x: ideology.x,
       y: ideology.y,
@@ -64,6 +66,7 @@ class PCWUser extends PCWActor {
       name: player.name || 'Joueur',
       ideologyId: player.ideologyId || null,
       ideologyName: player.ideologyName || 'Non choisi',
+      ideologyWeights: player.ideologyWeights || player.ideology_weights || {},
       color: player.color || '#ffffff',
       x: Number(player.x || 0),
       y: Number(player.y || 0),
@@ -82,6 +85,71 @@ class PCWUser extends PCWActor {
       movementTarget: player.movementTarget || null,
       movementAnimation: player.movementAnimation || null
     });
+  }
+
+  setIdeologyWeights(weights, ideologies) {
+    const safeWeights = weights && typeof weights === 'object' ? weights : {};
+    this.ideologyWeights = { ...safeWeights };
+
+    const entries = Object.entries(this.ideologyWeights)
+      .map(([id, score]) => ({ id, score: Math.max(0, Math.min(10, Number(score) || 0)) }))
+      .filter((entry) => entry.score > 0);
+
+    const total = entries.reduce((sum, entry) => sum + entry.score, 0);
+    const ideologyList = Array.isArray(ideologies) ? ideologies : [];
+
+    if (total <= 0) {
+      this.ideologyId = null;
+      this.ideologyName = 'Non choisi';
+      return;
+    }
+
+    const byId = new Map(ideologyList.map((ideology) => [ideology.id, ideology]));
+    const sorted = [...entries].sort((a, b) => b.score - a.score);
+    const dominant = byId.get(sorted[0].id);
+
+    if (dominant) {
+      this.ideologyId = dominant.id;
+      this.color = dominant.color;
+    }
+
+    const names = sorted.slice(0, 2)
+      .map((entry) => byId.get(entry.id)?.name)
+      .filter(Boolean);
+    this.ideologyName = names.length ? names.join(' / ') : 'Profil mixte';
+
+    let x = 0;
+    let y = 0;
+    let influencePower = 0;
+    let attackPower = 0;
+    let supportPower = 0;
+    let regen = 0;
+    let moveSpeed = 0;
+
+    entries.forEach((entry) => {
+      const ideology = byId.get(entry.id);
+      if (!ideology) return;
+      const ratio = entry.score / total;
+      x += Number(ideology.x || 0) * ratio;
+      y += Number(ideology.y || 0) * ratio;
+      influencePower += Number(ideology.influencePower || 0) * ratio;
+      attackPower += Number(ideology.attackPower || 0) * ratio;
+      supportPower += Number(ideology.supportPower || 0) * ratio;
+      regen += Number(ideology.regen || 0) * ratio;
+      moveSpeed += Number(ideology.moveSpeed || 10) * ratio;
+    });
+
+    this.x = x;
+    this.y = y;
+    this.market = x;
+    this.authority = y;
+    this.baseMarket = x;
+    this.baseAuthority = y;
+    this.influencePower = Math.round(influencePower);
+    this.attackPower = Math.round(attackPower);
+    this.supportPower = Math.round(supportPower);
+    this.regen = Math.round(regen);
+    this.moveSpeed = Math.max(1, Number(moveSpeed || 10));
   }
 
   setCompassPosition(market, authority) {

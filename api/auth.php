@@ -17,6 +17,7 @@ function pcw_public_player(array $player): array {
         'id' => (int)$player['id'],
         'name' => $player['name'],
         'ideology_id' => $player['ideology_id'] ?: null,
+        'ideology_weights' => pcw_decode_ideology_weights($player['ideology_weights'] ?? null),
         'color' => $player['color'],
         'x' => (float)$player['x'],
         'y' => (float)$player['y'],
@@ -39,7 +40,7 @@ try {
 
         $player = pcw_find_player_by_token($db, $token);
         if (!$player) {
-            pcw_json_response(['authenticated' => false], 401);
+            pcw_json_response(['authenticated' => false]);
         }
 
         pcw_json_response([

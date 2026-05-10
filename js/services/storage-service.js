@@ -28,18 +28,48 @@ class PCWStorageService {
   }
 
   stateFromPayload(payload) {
+    const hasPlayableProfile = (player) => {
+      if (!player) return false;
+      const weights = player.ideologyWeights || player.ideology_weights || {};
+      const total = Object.values(weights).reduce((sum, value) => sum + Math.max(0, Number(value) || 0), 0);
+      return Boolean(player.ideologyId || player.ideology_id || total > 0);
+    };
+
+    const hydrateState = (rawState) => {
+      const stateData = rawState && typeof rawState === 'object' ? { ...rawState } : {};
+
+      // Defensive fix: an old or partial server state must never blank the map.
+      // If forts are missing, rebuild the map from the local configuration.
+      if (!Array.isArray(stateData.forts) || stateData.forts.length === 0) {
+        stateData.forts = this.config.fortTemplates.map((template, index) => (
+          PCWFort.fromTemplate(template, index, this.config.maxHp)
+        ));
+      }
+
+      if (!Array.isArray(stateData.projectiles)) stateData.projectiles = [];
+      if (!Array.isArray(stateData.preparedActions)) stateData.preparedActions = [];
+      if (!Array.isArray(stateData.destroyEffects)) stateData.destroyEffects = [];
+      if (!Array.isArray(stateData.log)) stateData.log = ['Bienvenue sur la carte.'];
+
+      if (payload.player) {
+        stateData.player = PCWUser.fromServerPlayer(payload.player);
+      }
+
+      stateData.humanPlayers = (payload.humanPlayers || (payload.player ? [payload.player] : []))
+        .map((player) => PCWUser.fromServerPlayer(player));
+
+      stateData.started = hasPlayableProfile(stateData.player);
+
+      const state = new PCWGameState(stateData, this.config);
+      localStorage.setItem(this.config.storageKey, JSON.stringify(state));
+      return state;
+    };
+
     if (payload.exists && payload.state) {
-      localStorage.setItem(this.config.storageKey, JSON.stringify(payload.state));
-      return new PCWGameState(payload.state, this.config);
+      return hydrateState(payload.state);
     }
 
-    const initialState = PCWGameState.createInitial(this.config);
-    if (payload.player) {
-      initialState.player = PCWUser.fromServerPlayer(payload.player);
-      initialState.humanPlayers = (payload.humanPlayers || [payload.player]).map((player) => PCWUser.fromServerPlayer(player));
-      initialState.started = Boolean(initialState.player.ideologyId);
-    }
-    return initialState;
+    return hydrateState(PCWGameState.createInitial(this.config));
   }
 
   async load() {

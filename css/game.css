@@ -1620,7 +1620,7 @@ body.game-paused .projectile-token {
   inset: 0;
   display: grid;
   place-items: center;
-  z-index: 200;
+  z-index: 9999;
   padding: 24px;
   background: rgba(0,0,0,.62);
   backdrop-filter: blur(7px);
@@ -2049,3 +2049,182 @@ body.game-paused .projectile-token {
   opacity: .45;
   cursor: wait;
 }
+
+/* Player profile ideology allocation */
+.player-profile-hero {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 14px;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(255,255,255,.10), rgba(255,255,255,.04));
+}
+
+.player-avatar-preview {
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  border-radius: 24px;
+  color: #fff;
+  background: radial-gradient(circle at top, var(--avatar-color), rgba(255,255,255,.06));
+  box-shadow: 0 0 28px color-mix(in srgb, var(--avatar-color) 55%, transparent);
+  font-size: 34px;
+  font-weight: 950;
+  text-shadow: 0 2px 10px rgba(0,0,0,.5);
+}
+
+.player-profile-hero strong,
+.player-profile-hero span,
+.player-profile-hero small {
+  display: block;
+}
+
+.player-profile-hero strong {
+  font-size: 22px;
+}
+
+.player-profile-hero span {
+  color: rgba(255,255,255,.82);
+  font-weight: 800;
+}
+
+.player-profile-hero small {
+  margin-top: 5px;
+  color: var(--muted);
+}
+
+.profile-section {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid rgba(255,255,255,.13);
+  border-radius: 22px;
+  background: rgba(255,255,255,.045);
+}
+
+.profile-section-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: start;
+  margin-bottom: 12px;
+}
+
+.profile-section-head h3 {
+  margin: 0 0 4px;
+}
+
+.profile-section-head p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.points-counter {
+  min-width: 62px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  color: #ffdf8a;
+  background: rgba(255, 193, 7, .13);
+  text-align: center;
+}
+
+.points-counter.complete {
+  color: #a7f3d0;
+  background: rgba(16, 185, 129, .18);
+}
+
+.ideology-allocation-help {
+  margin-bottom: 10px;
+  color: rgba(255,255,255,.74);
+  font-size: 13px;
+}
+
+.ideology-allocation-list {
+  display: grid;
+  gap: 9px;
+}
+
+.ideology-allocation-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) auto auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 16px;
+  background: rgba(0,0,0,.16);
+}
+
+.ideology-allocation-label {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+
+.ideology-allocation-label strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ideology-allocation-label small {
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.ideology-allocation-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--ideology-color);
+  box-shadow: 0 0 14px var(--ideology-color);
+}
+
+.ideology-dots {
+  display: flex;
+  gap: 5px;
+}
+
+.ideology-dot {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: 999px;
+  background: rgba(255,255,255,.07);
+}
+
+.ideology-dot.active {
+  border-color: color-mix(in srgb, var(--ideology-color) 65%, white);
+  background: var(--ideology-color);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--ideology-color) 70%, transparent);
+}
+
+.ideology-clear {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 999px;
+  color: rgba(255,255,255,.76);
+  background: rgba(255,255,255,.08);
+}
+
+@media (max-width: 760px) {
+  .ideology-allocation-row {
+    grid-template-columns: 1fr;
+  }
+
+  .ideology-dots {
+    flex-wrap: wrap;
+  }
+}
+
+
+/* Legacy ideology chooser removed: ideology weights are set in player profile. */
+#ideologyChooser { display: none !important; }

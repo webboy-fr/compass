@@ -22,6 +22,7 @@ class PCWGameController {
     this.lastLocalChangeAt = 0;
     this.lastRemoteSyncAt = 0;
     this.lastActionClickAt = 0;
+    this.isPlayerProfileRequired = false;
   }
 
   static async create(config) {
@@ -42,6 +43,54 @@ class PCWGameController {
     this.startLoop();
     this.startSyncLoop();
     this.startAnimationLoop();
+    this.openPlayerProfileIfSetupIsMissing();
+  }
+
+  playerNeedsProfileSetup() {
+    if (!this.state || !this.state.player) {
+      return false;
+    }
+
+    const ideologyTotal = this.getPlayerIdeologyTotal();
+    return (!this.state.player.playerClass && !this.state.player.classId) || ideologyTotal !== 10;
+  }
+
+  openPlayerProfileIfSetupIsMissing() {
+    if (!this.playerNeedsProfileSetup()) {
+      return;
+    }
+
+    const openProfile = () => {
+      if (this.playerNeedsProfileSetup()) {
+        this.openRequiredPlayerProfile();
+      }
+    };
+
+    openProfile();
+
+    if (window.requestAnimationFrame) {
+      window.requestAnimationFrame(openProfile);
+    }
+
+    window.setTimeout(openProfile, 150);
+    window.setTimeout(openProfile, 500);
+  }
+
+  getPlayerIdeologyTotal() {
+    const weights = this.state?.player?.ideologyWeights || {};
+    return Object.values(weights).reduce((sum, value) => sum + Math.max(0, Number(value) || 0), 0);
+  }
+
+  openRequiredPlayerProfile() {
+    this.isPlayerProfileRequired = true;
+
+    // Close map-side panels so the mandatory profile is the only active UI layer.
+    if (this.renderer.closeMoveActionPanel) {
+      this.renderer.closeMoveActionPanel();
+    }
+    this.state.selectedFortId = null;
+
+    this.renderer.openPlayerClassModal({ required: true });
   }
 
   bindEvents() {
@@ -212,7 +261,32 @@ class PCWGameController {
 
   handlePlayerClassModalClick(event) {
     if (event.target === this.renderer.elements.playerClassModal) {
-      this.renderer.closePlayerClassModal();
+      if (!this.isPlayerProfileRequired || !this.playerNeedsProfileSetup()) {
+        this.renderer.closePlayerClassModal();
+      }
+      return;
+    }
+
+
+    const ideologyPoint = event.target.closest('[data-action="set-ideology-score"]');
+    if (ideologyPoint) {
+      const ideologyId = ideologyPoint.dataset.ideologyId;
+      const requestedScore = Number(ideologyPoint.dataset.score || 0);
+      const weights = { ...(this.state.player.ideologyWeights || {}) };
+      const currentScore = Number(weights[ideologyId] || 0);
+      const currentTotal = Object.values(weights).reduce((sum, value) => sum + Math.max(0, Number(value) || 0), 0);
+      const remainingWithoutCurrent = Math.max(0, 10 - (currentTotal - currentScore));
+      const nextScore = Math.max(0, Math.min(10, requestedScore, remainingWithoutCurrent));
+
+      if (nextScore > 0) {
+        weights[ideologyId] = nextScore;
+      } else {
+        delete weights[ideologyId];
+      }
+
+      this.simulation.setPlayerIdeologyWeights(weights);
+      this.saveAndRender(false);
+      this.renderer.renderPlayerClassModal();
       return;
     }
 
@@ -234,6 +308,12 @@ class PCWGameController {
     if (!playerClass) return;
 
     this.simulation.choosePlayerClass(playerClass);
+    this.isPlayerProfileRequired = this.playerNeedsProfileSetup();
+    this.renderer.isPlayerClassModalRequired = this.isPlayerProfileRequired;
+    if (this.renderer.elements.playerClassModalClose) {
+      this.renderer.elements.playerClassModalClose.disabled = this.isPlayerProfileRequired;
+      this.renderer.elements.playerClassModalClose.title = this.isPlayerProfileRequired ? 'Complète ton profil avant de fermer.' : 'Fermer';
+    }
     this.saveAndRender(false);
     this.renderer.renderPlayerClassModal();
   }

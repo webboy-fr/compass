@@ -41,6 +41,8 @@ class PCWGameRenderer {
       player: null,
       humanPlayers: new Map()
     };
+
+    this.isPlayerClassModalRequired = false;
   }
 
 
@@ -104,6 +106,11 @@ class PCWGameRenderer {
   }
 
   renderIdeologyButtons(onChoose) {
+    // The legacy ideology chooser can be removed from the UI.
+    if (!this.elements.ideologyButtons) {
+      return;
+    }
+
     this.elements.ideologyButtons.innerHTML = '';
     this.config.ideologies.forEach((ideology) => {
       const button = document.createElement('button');
@@ -257,7 +264,12 @@ class PCWGameRenderer {
 
   renderHumanPlayers() {
     const currentId = this.state.player?.id;
-    const players = (this.state.humanPlayers || []).filter((player) => player.id !== currentId && player.ideologyId);
+    const hasProfile = (player) => {
+      const weights = player?.ideologyWeights || {};
+      const total = Object.values(weights).reduce((sum, value) => sum + Math.max(0, Number(value) || 0), 0);
+      return Boolean(player?.ideologyId || total > 0);
+    };
+    const players = (this.state.humanPlayers || []).filter((player) => player.id !== currentId && hasProfile(player));
     this.syncCollection(
       this.domCache.humanPlayers,
       players,
@@ -326,6 +338,15 @@ class PCWGameRenderer {
       },
       this.elements.layer
     );
+  }
+
+  escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
   }
 
   escapeAttr(value) {
@@ -551,35 +572,103 @@ class PCWGameRenderer {
 
     const playerClass = this.state.player.playerClass;
     const classes = this.config.playerClasses || [];
-    const currentAction = playerClass ? `<div class="current-class-card"><div class="class-image">${playerClass.icon || '🎭'}</div><div><h3>${playerClass.name}</h3><p>${playerClass.description || ''}</p><strong>${playerClass.actionName}</strong><small>${this.getActionTypeLabel(playerClass.actionType)} · coût ${playerClass.energyCost} · puissance ${playerClass.power} · soutiens ${Number(playerClass.requiredSupports ?? 1)} · chargement ${Number(playerClass.preparationSeconds ?? playerClass.cooldownSeconds ?? 1)}s</small><button class="button subtle" type="button" data-action="reset-class">Réinitialiser la classe</button></div></div>` : '<p class="hint">Choisis une classe pour débloquer une action spéciale dans le panneau d’action des places fortes.</p>';
+    const ideologies = this.config.ideologies || [];
+    const weights = this.state.player.ideologyWeights || {};
+    const ideologyTotal = Object.values(weights).reduce((sum, value) => sum + Math.max(0, Number(value) || 0), 0);
+    const remaining = Math.max(0, 10 - ideologyTotal);
+    const profileComplete = Boolean(playerClass) && ideologyTotal === 10;
+    const requiredMessage = this.isPlayerClassModalRequired && !profileComplete
+      ? '<p class="hint required-profile-hint">Bienvenue ! Compose ton profil : répartis 10 points idéologiques et choisis une classe avant de rejoindre la partie.</p>'
+      : '';
+
+    const avatar = `<div class="player-profile-hero">
+      <div class="player-avatar-preview" style="--avatar-color:${this.state.player.color || '#ffffff'}">${(this.state.player.name || 'J').slice(0, 1).toUpperCase()}</div>
+      <div>
+        <strong>${this.escapeHtml(this.state.player.name)}</strong>
+        <span>${this.escapeHtml(this.state.player.ideologyName || 'Profil non défini')}</span>
+        <small>Énergie ${Math.round(this.state.player.energy)} · ${ideologyTotal}/10 points idéologiques</small>
+      </div>
+    </div>`;
+
+    const ideologyRows = ideologies.map((ideology) => {
+      const score = Math.max(0, Number(weights[ideology.id] || 0));
+      const dots = Array.from({ length: 10 }, (_, index) => {
+        const dotScore = index + 1;
+        const active = dotScore <= score;
+        return `<button class="ideology-dot ${active ? 'active' : ''}" type="button" data-action="set-ideology-score" data-ideology-id="${this.escapeAttr(ideology.id)}" data-score="${dotScore}" title="${dotScore} point${dotScore > 1 ? 's' : ''} sur ${this.escapeAttr(ideology.name)}"></button>`;
+      }).join('');
+
+      return `<div class="ideology-allocation-row" style="--ideology-color:${ideology.color}">
+        <div class="ideology-allocation-label">
+          <span class="ideology-allocation-color"></span>
+          <strong>${this.escapeHtml(ideology.name)}</strong>
+          <small>${score}/10</small>
+        </div>
+        <div class="ideology-dots">${dots}</div>
+        <button class="ideology-clear" type="button" data-action="set-ideology-score" data-ideology-id="${this.escapeAttr(ideology.id)}" data-score="0">0</button>
+      </div>`;
+    }).join('');
+
+    const ideologyBlock = `<section class="profile-section ideology-allocation">
+      <div class="profile-section-head">
+        <div><h3>Profil idéologique</h3><p>Répartis exactement 10 points. Le profil majoritaire donne la couleur, les stats sont mélangées.</p></div>
+        <strong class="points-counter ${ideologyTotal === 10 ? 'complete' : ''}">${ideologyTotal}/10</strong>
+      </div>
+      <div class="ideology-allocation-help">Points restants : <strong>${remaining}</strong></div>
+      <div class="ideology-allocation-list">${ideologyRows}</div>
+    </section>`;
+
+    const currentAction = playerClass
+      ? `<div class="current-class-card"><div class="class-image">${playerClass.icon || '🎭'}</div><div><h3>${this.escapeHtml(playerClass.name)}</h3><p>${this.escapeHtml(playerClass.description || '')}</p><strong>${this.escapeHtml(playerClass.actionName)}</strong><small>${this.getActionTypeLabel(playerClass.actionType)} · coût ${playerClass.energyCost} · puissance ${playerClass.power} · soutiens ${Number(playerClass.requiredSupports ?? 1)} · chargement ${Number(playerClass.preparationSeconds ?? playerClass.cooldownSeconds ?? 1)}s</small><button class="button subtle" type="button" data-action="reset-class">Réinitialiser la classe</button></div></div>`
+      : '<p class="hint">Choisis une classe pour débloquer une action spéciale dans le panneau d’action des places fortes.</p>';
 
     const choices = classes.map((item) => `
       <button class="class-choice ${playerClass && playerClass.id === item.id ? 'selected' : ''} ${playerClass ? 'locked' : ''}" type="button" ${playerClass ? 'disabled' : ''} data-action="choose-class" data-class-id="${item.id}" title="${playerClass ? 'Classe verrouillée : réinitialise pour changer.' : 'Choisir cette classe.'}">
         <span class="class-choice-icon">${item.icon || '🎭'}</span>
-        <span><strong>${item.name}</strong><small>${item.description || ''}<br>${item.actionName} · ${this.getActionTypeLabel(item.actionType)}</small></span>
+        <span><strong>${this.escapeHtml(item.name)}</strong><small>${this.escapeHtml(item.description || '')}<br>${this.escapeHtml(item.actionName)} · ${this.getActionTypeLabel(item.actionType)}</small></span>
       </button>
     `).join('');
 
     this.elements.playerClassModalContent.innerHTML = `
-      <div class="player-modal-summary">
-        <strong>${this.state.player.name}</strong>
-        <span>${this.state.player.ideologyName}</span>
-        <span>Énergie : ${Math.round(this.state.player.energy)}</span>
-      </div>
-      ${currentAction}
-      <div class="class-choices">${choices}</div>
+      ${avatar}
+      ${requiredMessage}
+      ${ideologyBlock}
+      <section class="profile-section">
+        <div class="profile-section-head"><div><h3>Classe</h3><p>Ta classe verrouille ton action spéciale.</p></div></div>
+        ${currentAction}
+        <div class="class-choices">${choices}</div>
+      </section>
     `;
   }
 
-  openPlayerClassModal() {
+  openPlayerClassModal(options = {}) {
     if (!this.elements.playerClassModal) return;
+    this.isPlayerClassModalRequired = Boolean(options.required);
     this.renderPlayerClassModal();
+    document.body.classList.add('player-profile-open');
     this.elements.playerClassModal.classList.remove('hidden');
+    this.elements.playerClassModal.setAttribute('aria-hidden', 'false');
+    if (this.elements.playerClassModalClose) {
+      const weights = this.state.player.ideologyWeights || {};
+      const ideologyTotal = Object.values(weights).reduce((sum, value) => sum + Math.max(0, Number(value) || 0), 0);
+      this.elements.playerClassModalClose.disabled = this.isPlayerClassModalRequired && (!this.state.player.playerClass || ideologyTotal !== 10);
+      this.elements.playerClassModalClose.title = this.elements.playerClassModalClose.disabled ? 'Complète ton profil avant de fermer.' : 'Fermer';
+    }
   }
 
   closePlayerClassModal() {
     if (!this.elements.playerClassModal) return;
+    const weights = this.state.player.ideologyWeights || {};
+    const ideologyTotal = Object.values(weights).reduce((sum, value) => sum + Math.max(0, Number(value) || 0), 0);
+    if (this.isPlayerClassModalRequired && (!this.state.player.playerClass || ideologyTotal !== 10)) return;
+    this.isPlayerClassModalRequired = false;
+    document.body.classList.remove('player-profile-open');
     this.elements.playerClassModal.classList.add('hidden');
+    this.elements.playerClassModal.setAttribute('aria-hidden', 'true');
+    if (this.elements.playerClassModalClose) {
+      this.elements.playerClassModalClose.disabled = false;
+      this.elements.playerClassModalClose.title = 'Fermer';
+    }
   }
 
   getActionTypeLabel(actionType) {

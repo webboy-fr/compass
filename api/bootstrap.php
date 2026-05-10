@@ -210,6 +210,73 @@ function pcw_string(mixed $value, string $default = '', int $maxlength = 255): s
  *
  * @return string
  */
+
+/**
+ * Decode saved ideology point distribution.
+ *
+ * @param mixed $value
+ * @return array<string, int>
+ */
+function pcw_decode_ideology_weights(mixed $value): array {
+    if (!is_string($value) || trim($value) === '') {
+        return [];
+    }
+
+    $decoded = json_decode($value, true);
+    if (!is_array($decoded)) {
+        return [];
+    }
+
+    $weights = [];
+    foreach ($decoded as $ideologyid => $score) {
+        $id = pcw_string($ideologyid, '', 64);
+        if ($id === '') {
+            continue;
+        }
+        $weights[$id] = max(0, min(10, (int)$score));
+    }
+
+    return $weights;
+}
+
+/**
+ * Validate and encode an ideology point distribution.
+ *
+ * @param mixed $value
+ * @return string|null
+ */
+function pcw_encode_ideology_weights(mixed $value): ?string {
+    if (!is_array($value)) {
+        return null;
+    }
+
+    $weights = [];
+    $total = 0;
+    foreach ($value as $ideologyid => $score) {
+        $id = pcw_string($ideologyid, '', 64);
+        if ($id === '') {
+            continue;
+        }
+        $points = max(0, min(10, (int)$score));
+        if ($points <= 0) {
+            continue;
+        }
+        $weights[$id] = $points;
+        $total += $points;
+    }
+
+    if ($total > 10) {
+        throw new InvalidArgumentException('La répartition idéologique ne peut pas dépasser 10 points.');
+    }
+
+    $json = json_encode($weights, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    if ($json === false) {
+        throw new RuntimeException('Unable to encode ideology weights.');
+    }
+
+    return $json;
+}
+
 function pcw_create_auth_token(): string {
     return bin2hex(random_bytes(32));
 }
