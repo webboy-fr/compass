@@ -4,22 +4,12 @@
  */
 declare(strict_types=1);
 
-$configfile = dirname(__DIR__) . '/config.php';
+$configfile = __DIR__ . '/config.local.php';
 if (!file_exists($configfile)) {
-    throw new RuntimeException('Missing configuration file: config.php. Copy config.example.php to config.php and adjust the database values.');
+    throw new RuntimeException('Missing API configuration file: api/config.local.php');
 }
 
 $dbconfig = require $configfile;
-if (!is_array($dbconfig)) {
-    throw new RuntimeException('Invalid configuration file: config.php must return an array.');
-}
-
-$requiredconfigkeys = ['dbhost', 'dbname', 'dbuser', 'dbpass'];
-foreach ($requiredconfigkeys as $requiredconfigkey) {
-    if (!array_key_exists($requiredconfigkey, $dbconfig)) {
-        throw new RuntimeException('Missing configuration key in config.php: ' . $requiredconfigkey);
-    }
-}
 
 /**
  * Return a PDO connection configured for safe default usage.
@@ -36,12 +26,12 @@ function pcw_db(): PDO {
 
     $dsn = sprintf(
         'mysql:host=%s;dbname=%s;charset=%s',
-        (string)$dbconfig['dbhost'],
-        (string)$dbconfig['dbname'],
-        (string)($dbconfig['charset'] ?? 'utf8mb4')
+        $dbconfig['dbhost'],
+        $dbconfig['dbname'],
+        $dbconfig['charset'] ?? 'utf8mb4'
     );
 
-    $pdo = new PDO($dsn, (string)$dbconfig['dbuser'], (string)$dbconfig['dbpass'], [
+    $pdo = new PDO($dsn, $dbconfig['dbuser'], $dbconfig['dbpass'], [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_EMULATE_PREPARES => false,
