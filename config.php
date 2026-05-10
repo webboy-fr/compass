@@ -1,7 +1,8 @@
 <?php
+
 $config = [
     'db_host' => 'localhost',
-    'db_name' => 'compass',
+    'db_name' => 'compassv2',
     'db_user' => 'julien',
-    'db_pass' => 'password',
+    'db_pass' => 'julien',
 ];

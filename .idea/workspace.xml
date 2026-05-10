@@ -7,7 +7,11 @@
     <list default="true" id="0877ea7f-a949-41dd-8b49-fc801b01ea53" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/api/config.php" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/README_MIGRATIONS.md" beforeDir="false" afterPath="$PROJECT_DIR$/README_MIGRATIONS.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/config.example.php" beforeDir="false" afterPath="$PROJECT_DIR$/config.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sql/migrations/000_create_migrations_table.sql" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/sql/migrations/001_initial_schema.sql" beforeDir="false" afterPath="$PROJECT_DIR$/sql/migrations/001_initial_schema.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tools/migrate.php" beforeDir="false" afterPath="$PROJECT_DIR$/tools/migrate.php" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -43,7 +47,6 @@
     &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
     &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
     &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
@@ -76,7 +79,7 @@
       <option name="presentableId" value="Default" />
       <updated>1777927403638</updated>
       <workItem from="1777927404856" duration="20185000" />
-      <workItem from="1778417844597" duration="3421000" />
+      <workItem from="1778417844597" duration="2181000" />
     </task>
     <servers />
   </component>
