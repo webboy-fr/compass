@@ -1,8 +1,11 @@
 <?php
 /**
- * Local database configuration.
- * Adjust the values for your hosting.
+ * Compass War server configuration.
+ *
+ * This file is environment-specific and is ignored by Git.
  */
+declare(strict_types=1);
+
 return [
     'dbhost' => 'localhost',
     'dbname' => 'compass',

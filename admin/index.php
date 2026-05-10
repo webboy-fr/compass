@@ -20,7 +20,7 @@ try {
     echo '</div></section>';
     echo '<section class="card"><h2>Persistance</h2><p>Le front charge la configuration depuis <code>api/config.php</code> et sauvegarde l’état courant dans <code>api/state.php</code>. En cas d’erreur API, il retombe sur le localStorage.</p>';
     echo '<p class="small">Dernière sauvegarde serveur : ' . pcw_h($state['updated_at'] ?? 'aucune') . '</p></section>';
-    echo '<section class="card"><h2>Installation</h2><ol><li>Créer une base MySQL/MariaDB.</li><li>Importer <code>sql/schema.sql</code>.</li><li>Importer <code>sql/seed.sql</code>.</li><li>Vérifier <code>api/config.local.php</code> et renseigner les identifiants DB si besoin.</li></ol></section>';
+    echo '<section class="card"><h2>Installation</h2><ol><li>Créer une base MySQL/MariaDB.</li><li>Importer <code>sql/schema.sql</code>.</li><li>Importer <code>sql/seed.sql</code>.</li><li>Copier <code>config.example.php</code> vers <code>config.php</code>, puis renseigner les identifiants DB.</li></ol></section>';
     pcw_admin_footer();
 } catch (Throwable $error) {
     pcw_admin_header('Dashboard');

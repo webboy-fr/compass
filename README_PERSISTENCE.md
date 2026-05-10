@@ -14,8 +14,8 @@
 1. Créer une base MySQL/MariaDB.
 2. Importer `sql/schema.sql`.
 3. Importer `sql/seed.sql`.
-4. Vérifier `api/config.local.php` et renseigner les identifiants DB si besoin.
-5. Modifier `api/config.local.php` avec les identifiants de l’hébergeur.
+4. Copier `config.example.php` vers `config.php`.
+5. Modifier `config.php` avec les identifiants de l’hébergeur.
 6. Ouvrir `admin/index.php` pour vérifier que la connexion DB fonctionne.
 7. Ouvrir `index.html` pour jouer.
 
