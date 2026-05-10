@@ -59,7 +59,7 @@ try {
         if ($name === '') {
             throw new InvalidArgumentException('Le nom du joueur est obligatoire.');
         }
-        if (mb_strlen($password) < 4) {
+        if ((function_exists('mb_strlen') ? mb_strlen($password) : strlen($password)) < 4) {
             throw new InvalidArgumentException('Le mot de passe doit faire au moins 4 caractères.');
         }
 

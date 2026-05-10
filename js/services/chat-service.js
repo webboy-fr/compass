@@ -76,7 +76,7 @@ class PCWChatService {
         throw new Error(`Chat API error ${response.status}`);
       }
 
-      const payload = await response.json();
+      const payload = await PCWApiResponseParser.parse(response, 'Chat API');
       this.elements.input.value = '';
       this.messages = Array.isArray(payload.messages) ? payload.messages : [];
       this.render();
@@ -102,7 +102,7 @@ class PCWChatService {
         throw new Error(`Chat API error ${response.status}`);
       }
 
-      const payload = await response.json();
+      const payload = await PCWApiResponseParser.parse(response, 'Chat API');
       this.messages = Array.isArray(payload.messages) ? payload.messages : [];
       this.lastFetchAt = Date.now();
       this.render();

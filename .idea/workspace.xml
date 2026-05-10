@@ -7,10 +7,15 @@
     <list default="true" id="0877ea7f-a949-41dd-8b49-fc801b01ea53" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README_MIGRATIONS.md" beforeDir="false" afterPath="$PROJECT_DIR$/README_MIGRATIONS.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config.example.php" beforeDir="false" afterPath="$PROJECT_DIR$/config.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/sql/migrations/000_create_migrations_table.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/sql/migrations/001_initial_schema.sql" beforeDir="false" afterPath="$PROJECT_DIR$/sql/migrations/001_initial_schema.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api/auth.php" beforeDir="false" afterPath="$PROJECT_DIR$/api/auth.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api/bootstrap.php" beforeDir="false" afterPath="$PROJECT_DIR$/api/bootstrap.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/config.example.php" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/config.php" beforeDir="false" afterPath="$PROJECT_DIR$/config.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/js/services/auth-service.js" beforeDir="false" afterPath="$PROJECT_DIR$/js/services/auth-service.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/js/services/chat-service.js" beforeDir="false" afterPath="$PROJECT_DIR$/js/services/chat-service.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/js/services/config-loader.js" beforeDir="false" afterPath="$PROJECT_DIR$/js/services/config-loader.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/js/services/storage-service.js" beforeDir="false" afterPath="$PROJECT_DIR$/js/services/storage-service.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tools/migrate.php" beforeDir="false" afterPath="$PROJECT_DIR$/tools/migrate.php" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />

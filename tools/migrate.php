@@ -9,11 +9,22 @@ try {
         throw new RuntimeException('Missing config.php. Copy config.example.php to config.php and edit database values.');
     }
 
-    $config = require $configpath;
+    $loader = static function (string $file): array {
+        $config = null;
+        $returned = require $file;
 
-    if (!is_array($config)) {
-        throw new RuntimeException('config.php must return a configuration array.');
-    }
+        if (is_array($returned)) {
+            return $returned;
+        }
+
+        if (is_array($config)) {
+            return $config;
+        }
+
+        throw new RuntimeException('config.php must return a configuration array. Expected: return [\'db_host\' => ..., \'db_name\' => ..., \'db_user\' => ..., \'db_pass\' => ...];');
+    };
+
+    $config = $loader($configpath);
 
     foreach (['db_host', 'db_name', 'db_user', 'db_pass'] as $key) {
         if (!array_key_exists($key, $config) || $config[$key] === '') {

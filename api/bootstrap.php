@@ -4,21 +4,96 @@
  */
 declare(strict_types=1);
 
-$configfile = dirname(__DIR__) . '/config.php';
-if (!file_exists($configfile)) {
-    throw new RuntimeException('Missing root configuration file: config.php. Copy config.example.php to config.php and edit database values.');
-}
+error_reporting(E_ALL);
+ini_set('display_errors', '0');
 
-$config = require $configfile;
-if (!is_array($config)) {
-    throw new RuntimeException('config.php must return a configuration array.');
-}
-
-foreach (['db_host', 'db_name', 'db_user', 'db_pass'] as $key) {
-    if (!array_key_exists($key, $config) || $config[$key] === '') {
-        throw new RuntimeException('Missing database config key: ' . $key);
+/**
+ * Send a JSON response and stop the current request.
+ *
+ * @param mixed $payload
+ * @param int $status
+ * @return void
+ */
+function pcw_json_response(mixed $payload, int $status = 200): void {
+    http_response_code($status);
+    if (!headers_sent()) {
+        header('Content-Type: application/json; charset=utf-8');
     }
+    echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
 }
+
+set_exception_handler(static function (Throwable $exception): void {
+    pcw_json_response([
+        'error' => $exception->getMessage(),
+    ], 500);
+});
+
+register_shutdown_function(static function (): void {
+    $error = error_get_last();
+    if ($error === null) {
+        return;
+    }
+
+    $fataltypes = [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR];
+    if (!in_array((int)$error['type'], $fataltypes, true)) {
+        return;
+    }
+
+    if (!headers_sent()) {
+        http_response_code(500);
+        header('Content-Type: application/json; charset=utf-8');
+    }
+
+    echo json_encode([
+        'error' => 'Fatal PHP error: ' . ($error['message'] ?? 'unknown error'),
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+});
+
+/**
+ * Load the root application configuration.
+ *
+ * Supports the recommended format:
+ * return ['db_host' => 'localhost', ...];
+ *
+ * Also supports the older format:
+ * $config = ['db_host' => 'localhost', ...];
+ *
+ * @param string $configfile
+ * @return array<string, mixed>
+ */
+function pcw_load_root_config(string $configfile): array {
+    if (!file_exists($configfile)) {
+        throw new RuntimeException('Missing root configuration file: config.php. Copy config.example.php to config.php and edit database values.');
+    }
+
+    $loader = static function (string $file): array {
+        $config = null;
+        $returned = require $file;
+
+        if (is_array($returned)) {
+            return $returned;
+        }
+
+        if (is_array($config)) {
+            return $config;
+        }
+
+        throw new RuntimeException('config.php must return a configuration array. Expected: return [\'db_host\' => ..., \'db_name\' => ..., \'db_user\' => ..., \'db_pass\' => ...];');
+    };
+
+    $loadedconfig = $loader($configfile);
+
+    foreach (['db_host', 'db_name', 'db_user', 'db_pass'] as $key) {
+        if (!array_key_exists($key, $loadedconfig) || $loadedconfig[$key] === '') {
+            throw new RuntimeException('Missing database config key: ' . $key);
+        }
+    }
+
+    return $loadedconfig;
+}
+
+$config = pcw_load_root_config(dirname(__DIR__) . '/config.php');
 
 /**
  * Return a PDO connection configured for safe default usage.
@@ -48,20 +123,6 @@ function pcw_db(): PDO {
     ]);
 
     return $pdo;
-}
-
-/**
- * Send a JSON response and stop the current request.
- *
- * @param mixed $payload
- * @param int $status
- * @return void
- */
-function pcw_json_response(mixed $payload, int $status = 200): void {
-    http_response_code($status);
-    header('Content-Type: application/json; charset=utf-8');
-    echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    exit;
 }
 
 /**
@@ -141,7 +202,7 @@ function pcw_string(mixed $value, string $default = '', int $maxlength = 255): s
         return $default;
     }
 
-    return mb_substr($stringvalue, 0, $maxlength);
+    return function_exists('mb_substr') ? mb_substr($stringvalue, 0, $maxlength) : substr($stringvalue, 0, $maxlength);
 }
 
 /**

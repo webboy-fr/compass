@@ -30,7 +30,7 @@ class PCWAuthService {
       return null;
     }
 
-    const payload = await response.json();
+    const payload = await PCWApiResponseParser.parse(response, 'Auth API');
     return payload.authenticated ? payload.player : null;
   }
 
@@ -48,7 +48,7 @@ class PCWAuthService {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action, name, password })
     });
-    const payload = await response.json();
+    const payload = await PCWApiResponseParser.parse(response, 'Auth API');
     if (!response.ok || payload.error) {
       throw new Error(payload.error || 'Erreur d’authentification.');
     }

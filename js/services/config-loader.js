@@ -14,7 +14,7 @@ class PCWConfigLoader {
         throw new Error(`Config API error ${response.status}`);
       }
 
-      const remoteConfig = await response.json();
+      const remoteConfig = await PCWApiResponseParser.parse(response, 'Config API');
       return {
         ...config,
         ideologies: Array.isArray(remoteConfig.ideologies) && remoteConfig.ideologies.length ? remoteConfig.ideologies : config.ideologies,

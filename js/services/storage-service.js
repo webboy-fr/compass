@@ -24,7 +24,7 @@ class PCWStorageService {
     if (!response.ok) {
       throw new Error(`State API error ${response.status}`);
     }
-    return response.json();
+    return PCWApiResponseParser.parse(response, 'State API');
   }
 
   stateFromPayload(payload) {
@@ -86,7 +86,7 @@ class PCWStorageService {
       throw new Error(`State API error ${response.status}`);
     }
 
-    return response.json();
+    return PCWApiResponseParser.parse(response, 'State API');
   }
 
   async sendActions(actions) {
@@ -104,7 +104,7 @@ class PCWStorageService {
       throw new Error(`Actions API error ${response.status}`);
     }
 
-    return response.json();
+    return PCWApiResponseParser.parse(response, 'Actions API');
   }
 
   async reset() {
@@ -118,7 +118,7 @@ class PCWStorageService {
     if (!response.ok) {
       throw new Error(`State API error ${response.status}`);
     }
-    return response.json();
+    return PCWApiResponseParser.parse(response, 'State API');
   }
 }
 
