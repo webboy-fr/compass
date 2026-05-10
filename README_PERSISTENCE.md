@@ -2,7 +2,7 @@
 
 ## Ce qui a été ajouté
 
-- `api/config.php` : charge les idéologies, forces/forts depuis la base.
+- `api/game-data.php` : charge les idéologies, forces/forts depuis la base.
 - `api/state.php` : sauvegarde/charge l’état courant de la partie.
 - `api/players.php` et `api/forts.php` : endpoints JSON minimaux pour créer/lister ces entités.
 - `admin/` : mini-backoffice pour gérer les idéologies, forces/forts, joueurs et la sauvegarde serveur.
@@ -14,8 +14,8 @@
 1. Créer une base MySQL/MariaDB.
 2. Importer `sql/schema.sql`.
 3. Importer `sql/seed.sql`.
-4. Vérifier `api/config.local.php` et renseigner les identifiants DB si besoin.
-5. Modifier `api/config.local.php` avec les identifiants de l’hébergeur.
+4. Vérifier `config.php` et renseigner les identifiants DB si besoin.
+5. Modifier `config.php` avec les identifiants de l’hébergeur.
 6. Ouvrir `admin/index.php` pour vérifier que la connexion DB fonctionne.
 7. Ouvrir `index.html` pour jouer.
 
@@ -23,7 +23,7 @@
 
 Le front change très peu :
 
-- il tente de charger la config serveur via `api/config.php` ;
+- il tente de charger la config serveur via `api/game-data.php` ;
 - il tente de charger/sauvegarder l’état serveur via `api/state.php` ;
 - si l’API ou la base ne répond pas, il continue avec la config JS et le `localStorage`.
 

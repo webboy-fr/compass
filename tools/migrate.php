@@ -9,10 +9,10 @@ try {
         throw new RuntimeException('Missing config.php. Copy config.example.php to config.php and edit database values.');
     }
 
-    require $configpath;
+    $config = require $configpath;
 
-    if (!isset($config) || !is_array($config)) {
-        throw new RuntimeException('config.php must define a $config array.');
+    if (!is_array($config)) {
+        throw new RuntimeException('config.php must return a configuration array.');
     }
 
     foreach (['db_host', 'db_name', 'db_user', 'db_pass'] as $key) {
@@ -26,7 +26,7 @@ try {
     echo 'User: ' . $config['db_user'] . PHP_EOL . PHP_EOL;
 
     $pdo = new PDO(
-        'mysql:host=' . $config['db_host'] . ';dbname=' . $config['db_name'] . ';charset=utf8mb4',
+        'mysql:host=' . $config['db_host'] . ';dbname=' . $config['db_name'] . ';charset=' . ($config['db_charset'] ?? 'utf8mb4'),
         $config['db_user'],
         $config['db_pass'],
         [

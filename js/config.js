@@ -4,7 +4,7 @@
 window.PCWConfig = {
   storageKey: 'political_compass_war_v12_prepared_specials',
   apiEnabled: true,
-  configApiUrl: 'api/config.php',
+  configApiUrl: 'api/game-data.php',
   stateApiUrl: 'api/state.php?key=default',
   actionsApiUrl: 'api/actions.php?key=default',
   chatApiUrl: 'api/chat.php',

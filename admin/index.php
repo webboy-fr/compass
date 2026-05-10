@@ -18,9 +18,9 @@ try {
         echo '<div><strong style="font-size:32px">' . pcw_h($count) . '</strong><div class="small">' . pcw_h($label) . '</div></div>';
     }
     echo '</div></section>';
-    echo '<section class="card"><h2>Persistance</h2><p>Le front charge la configuration depuis <code>api/config.php</code> et sauvegarde l’état courant dans <code>api/state.php</code>. En cas d’erreur API, il retombe sur le localStorage.</p>';
+    echo '<section class="card"><h2>Persistance</h2><p>Le front charge la configuration depuis <code>api/game-data.php</code> et sauvegarde l’état courant dans <code>api/state.php</code>. En cas d’erreur API, il retombe sur le localStorage.</p>';
     echo '<p class="small">Dernière sauvegarde serveur : ' . pcw_h($state['updated_at'] ?? 'aucune') . '</p></section>';
-    echo '<section class="card"><h2>Installation</h2><ol><li>Créer une base MySQL/MariaDB.</li><li>Importer <code>sql/schema.sql</code>.</li><li>Importer <code>sql/seed.sql</code>.</li><li>Vérifier <code>api/config.local.php</code> et renseigner les identifiants DB si besoin.</li></ol></section>';
+    echo '<section class="card"><h2>Installation</h2><ol><li>Créer une base MySQL/MariaDB.</li><li>Lancer <code>php tools/migrate.php</code>.</li><li>Vérifier <code>config.php</code> à la racine si besoin.</li></ol></section>';
     pcw_admin_footer();
 } catch (Throwable $error) {
     pcw_admin_header('Dashboard');
