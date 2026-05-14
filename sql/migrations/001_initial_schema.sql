@@ -22,6 +22,8 @@ CREATE TABLE IF NOT EXISTS pcw_forts (
   y DECIMAL(8,2) NOT NULL DEFAULT 0,
   base_ideology_id VARCHAR(64) NULL,
   hp INT NOT NULL DEFAULT 100,
+  category VARCHAR(40) NOT NULL DEFAULT 'institution',
+  created_by_player_id INT NULL,
   enabled TINYINT(1) NOT NULL DEFAULT 1,
   sort_order INT NOT NULL DEFAULT 0,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

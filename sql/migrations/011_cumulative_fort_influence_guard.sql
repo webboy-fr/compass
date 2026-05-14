@@ -1,0 +1,4 @@
+-- V17 cumulative fort influence guard.
+-- No schema change is required.
+-- This migration documents the gameplay rule enforced by api/actions.php and api/state.php:
+-- fort influence counters are cumulative and must never be overwritten by lower values from another browser session.

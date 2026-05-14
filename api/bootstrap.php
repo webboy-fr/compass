@@ -7,6 +7,9 @@ declare(strict_types=1);
 error_reporting(E_ALL);
 ini_set('display_errors', '0');
 
+// All gameplay timings and database timestamps use UTC.
+date_default_timezone_set('UTC');
+
 /**
  * Send a JSON response and stop the current request.
  *
@@ -122,7 +125,71 @@ function pcw_db(): PDO {
         PDO::ATTR_EMULATE_PREPARES => false,
     ]);
 
+    // Force the MySQL session to UTC so UTC_TIMESTAMP()/CURRENT_TIMESTAMP never depends on the server timezone.
+    $pdo->exec("SET time_zone = '+00:00'");
+
     return $pdo;
+}
+
+
+/**
+ * Return the current UTC timestamp in milliseconds.
+ *
+ * @return int
+ */
+function pcw_utc_now_ms(): int {
+    return (int)floor(microtime(true) * 1000);
+}
+
+/**
+ * Return the current UTC timestamp in seconds.
+ *
+ * @return int
+ */
+function pcw_utc_now_seconds(): int {
+    return intdiv(pcw_utc_now_ms(), 1000);
+}
+
+/**
+ * Return an UTC datetime formatted for MySQL DATETIME columns.
+ *
+ * @return string
+ */
+function pcw_utc_datetime(): string {
+    return gmdate('Y-m-d H:i:s');
+}
+
+/**
+ * Convert a database datetime, treated as UTC, into an epoch timestamp.
+ *
+ * @param string|null $datetime
+ * @return int|null
+ */
+function pcw_parse_utc_datetime(?string $datetime): ?int {
+    if ($datetime === null || trim($datetime) === '') {
+        return null;
+    }
+
+    try {
+        $date = new DateTimeImmutable($datetime, new DateTimeZone('UTC'));
+        return $date->getTimestamp();
+    } catch (Throwable) {
+        return null;
+    }
+}
+
+/**
+ * Attach the authoritative UTC clock to a shared state payload.
+ *
+ * @param array<string, mixed> $state
+ * @return array<string, mixed>
+ */
+function pcw_attach_utc_clock(array $state): array {
+    $nowms = pcw_utc_now_ms();
+    $state['time'] = intdiv($nowms, 1000);
+    $state['utcTimeMs'] = $nowms;
+    $state['utcIso'] = gmdate('Y-m-d\TH:i:s\Z', intdiv($nowms, 1000));
+    return $state;
 }
 
 /**
@@ -288,6 +355,77 @@ function pcw_create_auth_token(): string {
  * @param string $token
  * @return array<string, mixed>|null
  */
+
+
+/**
+ * Return the visible player coordinates from the stored movement timeline.
+ *
+ * The database stores x/y as the final destination so the movement is durable,
+ * while these helper values let every browser render the same smooth transition
+ * from UTC time.
+ *
+ * @param array<string, mixed> $player
+ * @param int|null $nowms
+ * @return array<string, mixed>
+ */
+function pcw_player_movement_view(array $player, ?int $nowms = null): array {
+    $nowms = $nowms ?? pcw_utc_now_ms();
+    $targetx = (float)($player['x'] ?? 2.3522);
+    $targety = (float)($player['y'] ?? 48.8566);
+
+    $fromx = isset($player['movement_from_x']) && $player['movement_from_x'] !== null ? (float)$player['movement_from_x'] : $targetx;
+    $fromy = isset($player['movement_from_y']) && $player['movement_from_y'] !== null ? (float)$player['movement_from_y'] : $targety;
+    $tox = isset($player['movement_to_x']) && $player['movement_to_x'] !== null ? (float)$player['movement_to_x'] : $targetx;
+    $toy = isset($player['movement_to_y']) && $player['movement_to_y'] !== null ? (float)$player['movement_to_y'] : $targety;
+    $startedms = isset($player['movement_started_at_ms']) && $player['movement_started_at_ms'] !== null ? (int)$player['movement_started_at_ms'] : 0;
+    $durationms = isset($player['movement_duration_ms']) && $player['movement_duration_ms'] !== null ? max(0, (int)$player['movement_duration_ms']) : 0;
+
+    if ($startedms <= 0 || $durationms <= 0 || $nowms >= $startedms + $durationms) {
+        return [
+            'x' => $targetx,
+            'y' => $targety,
+            'targetX' => $targetx,
+            'targetY' => $targety,
+            'moving' => false,
+            'elapsedMs' => $durationms,
+            'durationMs' => $durationms,
+        ];
+    }
+
+    $progress = max(0.0, min(1.0, ($nowms - $startedms) / $durationms));
+    $eased = $progress * $progress * (3 - (2 * $progress));
+
+    return [
+        'x' => $fromx + (($tox - $fromx) * $eased),
+        'y' => $fromy + (($toy - $fromy) * $eased),
+        'targetX' => $tox,
+        'targetY' => $toy,
+        'moving' => true,
+        'elapsedMs' => max(0, $nowms - $startedms),
+        'durationMs' => $durationms,
+        'startedAtMs' => $startedms,
+    ];
+}
+
+/**
+ * Compute a movement duration in milliseconds for longitude/latitude coordinates.
+ *
+ * @param float $fromx
+ * @param float $fromy
+ * @param float $tox
+ * @param float $toy
+ * @param float $movespeed
+ * @return int
+ */
+function pcw_compute_player_movement_duration_ms(float $fromx, float $fromy, float $tox, float $toy, float $movespeed): int {
+    $distance = sqrt((($tox - $fromx) ** 2) + (($toy - $fromy) ** 2));
+    $speed = max(1.0, $movespeed);
+    $cruiseunitspersecond = $speed * 0.18;
+    $duration = max(0.32, ($distance / $cruiseunitspersecond) + 0.16);
+
+    return (int)round($duration * 1000);
+}
+
 function pcw_find_player_by_token(PDO $db, string $token): ?array {
     if ($token === '') {
         return null;

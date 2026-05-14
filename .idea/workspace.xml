@@ -5,24 +5,37 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="0877ea7f-a949-41dd-8b49-fc801b01ea53" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/php.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/SPECIFICATIONS.md" beforeDir="false" afterPath="$PROJECT_DIR$/SPECIFICATIONS.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/admin/admin.css" beforeDir="false" afterPath="$PROJECT_DIR$/admin/admin.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api/actions.php" beforeDir="false" afterPath="$PROJECT_DIR$/api/actions.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/api/auth.php" beforeDir="false" afterPath="$PROJECT_DIR$/api/auth.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/api/bootstrap.php" beforeDir="false" afterPath="$PROJECT_DIR$/api/bootstrap.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api/chat.php" beforeDir="false" afterPath="$PROJECT_DIR$/api/chat.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api/forts.php" beforeDir="false" afterPath="$PROJECT_DIR$/api/forts.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api/game-data.php" beforeDir="false" afterPath="$PROJECT_DIR$/api/game-data.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api/players.php" beforeDir="false" afterPath="$PROJECT_DIR$/api/players.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/api/state.php" beforeDir="false" afterPath="$PROJECT_DIR$/api/state.php" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/css/game.css" beforeDir="false" afterPath="$PROJECT_DIR$/css/game.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/specs/player-actions.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/specs/player-actions.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/specs/ui-tooltips.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/specs/ui-tooltips.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/index.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/js/app.js" beforeDir="false" afterPath="$PROJECT_DIR$/js/app.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/js/config.js" beforeDir="false" afterPath="$PROJECT_DIR$/js/config.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/js/controllers/game-controller.js" beforeDir="false" afterPath="$PROJECT_DIR$/js/controllers/game-controller.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/js/models/fort.js" beforeDir="false" afterPath="$PROJECT_DIR$/js/models/fort.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/js/models/game-state.js" beforeDir="false" afterPath="$PROJECT_DIR$/js/models/game-state.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/js/models/projectile.js" beforeDir="false" afterPath="$PROJECT_DIR$/js/models/projectile.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/js/models/user.js" beforeDir="false" afterPath="$PROJECT_DIR$/js/models/user.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/js/renderers/game-renderer.js" beforeDir="false" afterPath="$PROJECT_DIR$/js/renderers/game-renderer.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/js/services/auth-service.js" beforeDir="false" afterPath="$PROJECT_DIR$/js/services/auth-service.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/js/services/simulation-service.js" beforeDir="false" afterPath="$PROJECT_DIR$/js/services/simulation-service.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/js/services/storage-service.js" beforeDir="false" afterPath="$PROJECT_DIR$/js/services/storage-service.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sql/migrations/001_initial_schema.sql" beforeDir="false" afterPath="$PROJECT_DIR$/sql/migrations/001_initial_schema.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sql/migrations/002_initial_seed.sql" beforeDir="false" afterPath="$PROJECT_DIR$/sql/migrations/002_initial_seed.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sql/migrations/003_baseline_game_data.sql" beforeDir="false" afterPath="$PROJECT_DIR$/sql/migrations/003_baseline_game_data.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sql/schema.sql" beforeDir="false" afterPath="$PROJECT_DIR$/sql/schema.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sql/seed.sql" beforeDir="false" afterPath="$PROJECT_DIR$/sql/seed.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tools/import_zip.sh" beforeDir="false" afterPath="$PROJECT_DIR$/tools/import_zip.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tools/migrate.php" beforeDir="false" afterPath="$PROJECT_DIR$/tools/migrate.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tools/reinstall_database.php" beforeDir="false" afterPath="$PROJECT_DIR$/tools/reinstall_database.php" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -33,7 +46,7 @@
     <execution />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="64" />
+    <option name="cachedIndexableFilesCount" value="74" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="Git.Settings">
@@ -58,12 +71,14 @@
     &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
     &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
     &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;main&quot;,
     &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/var/www/html/skillmapai&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/var/www/html/compass&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
@@ -91,6 +106,7 @@
       <updated>1777927403638</updated>
       <workItem from="1777927404856" duration="20185000" />
       <workItem from="1778417844597" duration="2181000" />
+      <workItem from="1778701619671" duration="12671000" />
     </task>
     <servers />
   </component>

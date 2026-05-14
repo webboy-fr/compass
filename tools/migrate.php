@@ -99,7 +99,7 @@ try {
 
             $insert = $pdo->prepare(
                 'INSERT INTO pcw_migrations (migration, applied_at)
-                 VALUES (:migration, NOW())'
+                 VALUES (:migration, UTC_TIMESTAMP())'
             );
 
             $insert->execute([

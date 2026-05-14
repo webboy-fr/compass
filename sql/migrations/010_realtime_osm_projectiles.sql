@@ -1,0 +1,3 @@
+-- V15 realtime OpenStreetMap projectiles.
+-- No schema change is required.
+-- This migration is intentionally empty so tools/migrate.php records the version.

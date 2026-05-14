@@ -137,8 +137,8 @@ class PCWSimulationService {
         actionName: special.actionName,
         actionType: special.actionType,
         icon: special.icon || '✨',
-        energyCost: Number(special.energyCost || special.power || 0),
-        power: Number(special.power || 0),
+        energyCost: 1,
+        power: 1,
         requiredSupports,
         supporters: [],
         preparationSeconds: Math.max(0, Number(special.preparationSeconds ?? special.cooldownSeconds ?? 1)),
@@ -207,7 +207,7 @@ class PCWSimulationService {
       if (action.actorId !== this.state.player.id || action.status !== 'charging') return;
       if (now < Number(action.chargeEndsAt || 0)) return;
       const currentEnergy = Number(this.state.player.energy || 0);
-      const energyCost = Number(action.energyCost || 0);
+      const energyCost = 1;
       if (currentEnergy < energyCost) {
         action.status = 'cancelled';
         action.updatedAt = now;
@@ -223,7 +223,7 @@ class PCWSimulationService {
         changed = true;
         return;
       }
-      const projectile = this.createProjectile(this.state.player.id, fort.id, action.actionType, Number(action.power || 0), {
+      const projectile = this.createProjectile(this.state.player.id, fort.id, action.actionType, 1, {
         isSpecial: true,
         actionSlug: action.actionSlug,
         label: action.actionName,
@@ -261,8 +261,12 @@ class PCWSimulationService {
       return null;
     }
 
-    const amount = Number(options.amount ?? this.state.player.getPower(type));
-    const energyCost = Number(options.energyCost ?? amount);
+    const influencePayload = type === 'influence' && typeof this.state.player.getInfluencePayload === 'function'
+      ? this.state.player.getInfluencePayload()
+      : {};
+    const influenceTotal = Object.values(influencePayload).reduce((sum, value) => sum + Math.max(0, Math.round(Number(value) || 0)), 0);
+    const amount = type === 'influence' ? Math.max(1, influenceTotal) : 1;
+    const energyCost = 1;
     const currentEnergy = Number(this.state.player.energy || 0);
     if (amount <= 0 || energyCost <= 0 || currentEnergy < energyCost) {
       const missing = Math.max(0, energyCost - currentEnergy);
@@ -288,6 +292,7 @@ class PCWSimulationService {
       fortId: fort.id,
       amount,
       energyCost,
+      influencePayload: type === 'influence' ? influencePayload : null,
       isSpecial: Boolean(options.isSpecial),
       actionSlug: options.actionSlug || null,
       label: options.label || null,
@@ -344,45 +349,125 @@ class PCWSimulationService {
   }
 
   applyProjectile(projectile, fort) {
+    // Server-accepted actions already update the authoritative fort counters.
+    // Remote projectiles are visual only and must not apply the same point twice.
+    if (projectile.serverApplied) return;
+
     const actor = this.state.getActor(projectile.actorId);
     if (!actor) return;
+
     if (projectile.type === 'influence') {
-      this.applyInfluence(projectile, fort, actor);
+      const payload = projectile.influencePayload && typeof projectile.influencePayload === 'object'
+        ? projectile.influencePayload
+        : (actor.getInfluencePayload ? actor.getInfluencePayload() : { [projectile.ideologyId]: Math.max(1, Math.round(Number(projectile.amount) || 1)) });
+
+      Object.entries(payload).forEach(([ideologyId, amount]) => {
+        fort.applyInfluence(ideologyId, Math.max(0, Math.round(Number(amount) || 0)));
+      });
+      this.updateFortOwner(fort, actor);
       return;
     }
-    if (projectile.type === 'attack') {
-      if (fort.attack(projectile.amount)) this.destroyFort(fort, actor);
+
+    if (projectile.type === 'power_up') {
+      fort.addPower(1);
       return;
     }
-    if (projectile.type === 'support') {
-      fort.repair(projectile.amount);
+
+    if (projectile.type === 'power_down') {
+      fort.removePower(1);
     }
   }
 
-  applyInfluence(projectile, fort, actor) {
-    fort.applyInfluence(
-      projectile.ideologyId,
-      projectile.amount,
-      this.config.maxInfluence,
-      this.config.influenceCompetitionDecay
-    );
-    fort.moveToward(actor, projectile.amount, this.config.moveFactor);
-    this.updateFortOwner(fort, actor);
-  }
+  updateBots() {
+    this.ensureState();
+    if (!Array.isArray(this.state.bots) || !this.state.bots.length || !this.state.forts.length) {
+      return false;
+    }
 
-  destroyFort(fort, actor) {
-    this.state.forts = this.state.forts.filter((item) => item.id !== fort.id);
-    this.state.projectiles = this.state.projectiles.filter((projectile) => projectile.fortId !== fort.id);
-    if (this.state.selectedFortId === fort.id) this.state.selectedFortId = null;
-    this.state.destroyEffects.push({
-      id: `destroy_${Date.now()}_${Math.random()}`,
-      x: fort.x,
-      y: fort.y,
-      name: fort.name,
-      createdAt: Date.now()
+    let launched = false;
+    this.state.bots.forEach((bot, index) => {
+      if (!bot || !bot.ideologyId) return;
+      const now = Number(this.state.time || 0);
+      const nextActionAt = Number(bot.nextActionAt ?? (now + index + 1));
+      if (now < nextActionAt) return;
+
+      const decision = this.chooseBotAction(bot);
+      const interval = this.getBotActionInterval(bot);
+      bot.actionInterval = interval;
+      bot.nextActionAt = now + interval;
+
+      if (!decision) return;
+      const projectile = this.createProjectile(bot.id, decision.fort.id, decision.type, decision.amount);
+      if (!projectile) return;
+
+      launched = true;
+      if (Math.random() < 0.35) {
+        this.state.addLog(`${bot.name} ${this.getBotActionVerb(decision.type)} ${decision.fort.name}.`);
+      }
     });
-    this.state.setNotice(`${fort.name} a été détruit.`);
-    this.state.addLog(`💥 ${actor.name} détruit ${fort.name}.`);
+
+    return launched;
+  }
+
+
+  getBotActionInterval(bot) {
+    const minInterval = Math.max(5, Number(this.config.botActionMinIntervalSeconds || 5));
+    const maxInterval = Math.max(minInterval, Number(this.config.botActionMaxIntervalSeconds || 10));
+    const configuredInterval = Number(bot?.actionInterval || this.config.botActionIntervalSeconds || minInterval);
+    const baseInterval = PCWMath.clamp(configuredInterval, minInterval, maxInterval);
+    const jitter = Math.random() * Math.max(0, maxInterval - minInterval);
+
+    return Math.round(Math.max(minInterval, Math.min(maxInterval, baseInterval + jitter - ((maxInterval - minInterval) / 2))));
+  }
+
+  chooseBotAction(bot) {
+    const forts = this.state.forts;
+    if (!forts.length) return null;
+
+    const opposingTargets = forts
+      .filter((fort) => fort.ownerIdeologyId && fort.ownerIdeologyId !== bot.ideologyId)
+      .map((fort) => ({ fort, score: Math.max(0, Number(fort.getTotalPower ? fort.getTotalPower() : fort.power || 0)) + PCWMath.random(0, 20) }))
+      .sort((a, b) => b.score - a.score);
+
+    const friendlyTargets = forts
+      .filter((fort) => fort.ownerIdeologyId === bot.ideologyId)
+      .map((fort) => ({ fort, score: Math.max(0, 120 - Number(fort.getTotalPower ? fort.getTotalPower() : fort.power || 0)) + PCWMath.random(0, 15) }))
+      .sort((a, b) => b.score - a.score);
+
+    const influenceTargets = forts
+      .filter((fort) => fort.ownerIdeologyId !== bot.ideologyId)
+      .map((fort) => {
+        const ownScore = Number(fort.influence?.[bot.ideologyId] || 0);
+        const leaderScore = Number(fort.getLeader()?.score || 0);
+        return { fort, score: (leaderScore - ownScore) + PCWMath.random(0, 20) };
+      })
+      .sort((a, b) => b.score - a.score);
+
+    const roll = Math.random();
+
+    if (opposingTargets.length && roll < 0.18) {
+      return { type: 'power_down', fort: opposingTargets[0].fort, amount: 1 };
+    }
+
+    if (friendlyTargets.length && roll < 0.38) {
+      return { type: 'power_up', fort: friendlyTargets[0].fort, amount: 1 };
+    }
+
+    if (influenceTargets.length) {
+      return { type: 'influence', fort: influenceTargets[0].fort, amount: 1 };
+    }
+
+    if (friendlyTargets.length) {
+      return { type: 'power_up', fort: friendlyTargets[0].fort, amount: 1 };
+    }
+
+    return null;
+  }
+
+  getBotActionVerb(type) {
+    if (type === 'power_down') return 'affaiblit le pouvoir de';
+    if (type === 'power_up') return 'renforce le pouvoir de';
+    return 'influence';
   }
 
   pruneDestroyEffects() {
@@ -392,26 +477,34 @@ class PCWSimulationService {
   updateFortOwner(fort, actor) {
     const leader = fort.getLeader();
     if (!leader) return;
-    const previousOwner = fort.ownerActorId;
+    const previousIdeology = fort.ownerIdeologyId;
     fort.ownerIdeologyId = leader.ideologyId;
-    fort.ownerActorId = actor.id;
-    if ((actor.id === this.state.player.id || actor.id === 'player') && previousOwner !== this.state.player.id) {
-      this.state.addLog(`🏰 Tu prends l’ascendant sur ${fort.name}.`);
+    fort.ownerActorId = null;
+
+    if (previousIdeology !== fort.ownerIdeologyId) {
+      const ideology = this.state.getIdeology(fort.ownerIdeologyId);
+      this.state.addLog(`🏰 ${fort.name} passe sous influence ${ideology.name}.`);
     }
   }
 
-  tick() {
+  tick(options = {}) {
     this.ensureState();
     if (this.state.paused) return;
-    this.state.time += 1;
+    const nowMs = Date.now();
+    this.state.utcTimeMs = nowMs;
+    this.state.utcIso = new Date(nowMs).toISOString().replace('.000Z', 'Z');
+    this.state.time = Math.floor(nowMs / 1000);
     if (this.state.started) this.state.player.regenerate();
-    this.processPreparedActions();
+    // Special/prepared actions have been removed from the simplified political model.
+    this.state.preparedActions = [];
+    return options.updateBots === false ? false : this.updateBots();
   }
 
   getActionLabel(type) {
     if (type === 'influence') return 'Influence';
-    if (type === 'attack') return 'Attaque';
-    return 'Soutien';
+    if (type === 'power_up') return 'Pouvoir +';
+    if (type === 'power_down') return 'Pouvoir -';
+    return 'Action';
   }
 }
 

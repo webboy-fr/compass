@@ -78,7 +78,7 @@ Effets :
 
 - ajoute des points d’influence de l’idéologie du joueur à la place forte ;
 - retire 1 point à chaque autre idéologie déjà présente sur cette place forte ;
-- rapproche progressivement la place forte de la position idéologique du joueur sur la carte ;
+- ne déplace pas la place forte, qui reste fixe sur la carte ;
 - ne détruit jamais la place forte.
 
 Exemple :
@@ -96,14 +96,14 @@ Attaquer est une action structurelle destructive.
 Effets :
 
 - retire des PV à la place forte ;
-- si les PV atteignent 0, la place forte est détruite ;
-- la place forte disparaît de la carte.
+- si les PV atteignent 0, la place forte est neutralisée ;
+- la place forte reste visible sur la carte avec une aura nulle.
 
-Quand une place forte est détruite :
+Quand une place forte est neutralisée :
 
-- une modale annonce la destruction ;
-- la place forte est supprimée de la liste ;
-- les projectiles déjà envoyés vers elle continuent vers sa dernière position connue puis disparaissent.
+- un message est ajouté au journal ;
+- la place forte reste dans la liste ;
+- les projectiles déjà envoyés vers elle continuent à pouvoir l'atteindre.
 
 ### Soutenir
 
@@ -122,7 +122,7 @@ Chaque action envoyée crée un projectile visible.
 - Les projectiles sont animés en continu.
 - Les projectiles ne dépendent pas du tick d’une seconde pour leur animation.
 - Plusieurs projectiles peuvent être envoyés rapidement si l’énergie est suffisante.
-- Si la cible est détruite avant l’arrivée, le projectile continue vers la dernière position connue puis disparaît.
+- Si la cible est à 0 PV avant l’arrivée, le projectile continue vers sa position fixe puis applique son effet.
 
 ## Temps de jeu
 
@@ -135,7 +135,7 @@ Le temps avance automatiquement.
 À chaque tick :
 
 - l’énergie du joueur se régénère ;
-- les places fortes peuvent recevoir une légère dérive naturelle vers leur idéologie de base.
+- les places fortes restent fixes et ne reçoivent pas de dérive naturelle.
 
 ## Interface V9.3
 
@@ -184,9 +184,9 @@ Clé localStorage :
 
 - The center topbar is hidden; the center column contains only the map.
 - The map scales as a square inside the available center column and uses the full viewport height when possible.
-- Destroyed forts no longer open any destruction modal.
-- When a fort reaches 0 HP, its hover/action panel closes, a short collapse/explosion animation appears at its last position, and a single log line is added.
-- Any projectiles still targeting a destroyed fort are removed immediately.
+- Forts at 0 HP stay on the map and no destruction modal opens.
+- When a fort reaches 0 HP, its aura becomes null and a single log line is added.
+- Projectiles can still target forts at 0 HP.
 
 ## V9.6 refactoring pass
 
@@ -230,7 +230,7 @@ Expected behavior: no intentional gameplay, layout, CSS or balancing changes in 
 
 - Added a pause/reprise control in the left rules panel.
 - When paused, the simulation timer no longer increments.
-- When paused, natural fort drift and projectile movement are frozen.
+- When paused, projectile movement is frozen.
 - Manual fort selection remains possible, but player actions are ignored until the simulation is resumed.
 - A large non-interactive PAUSE overlay is shown over the map while paused.
 - Existing DOM cache behavior is preserved: entities are not rebuilt every frame.
@@ -368,3 +368,83 @@ Fresh installations can use `sql/schema.sql` and `sql/seed.sql` directly.
 - Player coordinates and gameplay stats are computed as a weighted blend of selected ideologies.
 - The selected distribution is persisted in `pcw_players.ideology_weights` as JSON.
 - The player must also choose a class before closing the mandatory profile modal.
+
+## Autonomous bots
+
+- 10 bots autonomes sont créés avec une idéologie.
+- Les bots lancent périodiquement des projectiles vers les places fortes.
+- Ils influencent les forts adverses ou neutres, attaquent les forts contrôlés par une autre idéologie, et soutiennent les forts de leur idéologie quand ils sont endommagés.
+- En mode API multi-joueurs, un seul navigateur pilote les bots pour éviter les actions dupliquées.
+
+## Carte France SVG et bastions géographiques
+
+La carte abstraite à axes idéologiques est remplacée par une carte de France SVG vectorielle, zoomable et déplaçable. Les champs `x` et `y` représentent maintenant une position géographique normalisée de `0` à `100` dans le repère SVG affiché, et non plus une position politique. Le zoom est appliqué au calque vectoriel complet pour garder une carte nette et des marqueurs alignés.
+
+Les bastions par défaut sont : Palais de l’Élysée, Assemblée nationale, mairies de Paris, Marseille, Lyon, Toulouse, Nice, Place de la République, Rond-point populaire, Préfecture régionale de Bordeaux, Université militante de Grenoble, Plateau média, Marché national de Rungis et Commune verte. Les bastions parisiens sont volontairement très légèrement espacés pour rester cliquables sans surcharger la zone de Paris.
+
+Les joueurs peuvent créer librement des bastions depuis la carte : bouton “Créer un bastion”, clic sur la carte, saisie du nom, sauvegarde en DB via `api/forts.php`.
+
+### Carte France V12
+
+- Fond noir complet, décor vectoriel discret autour de la France.
+- Carte locale `assets/maps/france.svg`, sans image bitmap.
+- Zoom/pan appliqué au SVG uniquement.
+- Bastions, joueurs, projectiles et effets rendus sur un calque séparé avec taille fixe en pixels.
+- Coordonnées des bastions affinées selon une projection normalisée longitude/latitude.
+
+### Carte France — version 008
+
+- La carte centrale est un SVG vectoriel sombre, plus proche de la silhouette réelle de la France métropolitaine.
+- Le fond est noir, avec décor léger autour de la carte pour éviter la surcharge.
+- Les bastions gardent une taille fixe à l’écran pendant le zoom ; seules leurs positions suivent la transformation de la carte.
+- Les coordonnées par défaut sont affinées sur une projection lon/lat normalisée et enregistrées via `008_official_like_france_svg.sql`.
+
+
+
+## Bot action pacing
+
+Bots are intentionally slower than human clicks. Each bot action is scheduled with a randomized interval between 5 and 10 seconds. Existing saved states that contain older one-second bot intervals are clamped back into that safe range when the bot model is hydrated.
+
+Attack bias was also reduced slightly so bots mostly influence or support instead of constantly attacking bastions.
+
+## V13 - OpenStreetMap France administrative map
+
+The central game map now uses an OpenStreetMap background through Leaflet instead of a handcrafted SVG outline. Coordinates are longitude/latitude (`x = longitude`, `y = latitude`) with six-decimal precision in the database. Default institutional bastions are positioned using real-world city/place coordinates. Player-created bastions store the clicked longitude/latitude and remain visible to all players after synchronization.
+
+Markers are rendered as fixed-size HTML overlays above the map. Zooming/panning is handled by Leaflet, so bastion icons do not grow with the map zoom.
+
+## V15 — OpenStreetMap real-time projectile sync
+
+- The OpenStreetMap/Leaflet layer remains the map source of truth for pan, zoom and geographic projection.
+- Projectiles now move in longitude/latitude degrees instead of the old 0–100 abstract map space.
+- Projectile speed is intentionally slower (`0.85` to `1.45` degrees/second) so actions launched by one browser remain visible long enough for other sessions to receive them through polling.
+- Every projectile has `createdAt`, `updatedAt` and `minTravelMs` metadata. Even very short actions between close Paris bastions stay visible for at least ~900 ms.
+- Server-created projectiles use the same speed scale as the browser and keep the original client projectile id to prevent duplicate visual effects.
+- The polling interval is reduced to 350 ms for a more responsive multi-session feel.
+
+### Simplification du don d’influence
+
+Le modèle d’action est désormais volontairement simple : chaque influence, attaque ou soutien coûte 1 point au joueur et ajoute +1 point d’influence au bastion ciblé pour l’idéologie de l’acteur. Les points des autres idéologies ne baissent jamais. Le contrôle d’un bastion est uniquement idéologique : l’idéologie avec le plus de points cumulés contrôle le lieu, sans propriétaire joueur.
+
+## Simplified political action model
+
+The bastion action system has been simplified around three actions:
+
+- **Influence**: costs 1 player energy point and adds +1 cumulative influence point to the player dominant ideology on the selected bastion.
+- **Power +**: costs 1 player energy point and adds +1 cumulative positive power point to the selected bastion.
+- **Power −**: costs 1 player energy point and adds +1 cumulative anti-power point to the selected bastion.
+
+A bastion no longer has RPG-style HP, healing, damage, player ownership, or special actions. Control is ideological only: the dominant ideology is the ideology with the highest cumulative influence score. The visual aura color comes from that dominant ideology. The aura size is based on total power:
+
+`totalPower = positivePower - negativePower`
+
+Power counters and influence counters are cumulative. Browser sync must never overwrite a higher stored cumulative counter with a lower stale value.
+
+
+## Universal UTC timing
+
+The game clock is now based on universal UTC time rather than an isolated counter in seconds. The shared state exposes `time` as a UTC Unix timestamp in seconds, plus `utcTimeMs` and `utcIso` for precise browser synchronization. PHP forces UTC at runtime, the MySQL session uses `+00:00`, and writes use `UTC_TIMESTAMP()`. The UI displays the clock as `HH:MM:SS UTC`.
+
+## Weighted ideology influence
+
+A player influence action sends the player full ideology distribution, not only the dominant ideology. If a player has 5 liberal points and 5 sovereignist points, one influence action adds +5 liberal and +5 sovereignist to the selected bastion. The action cost remains 1 energy. The player color is a weighted mix of selected ideology colors, and the player panel displays every selected ideology score.

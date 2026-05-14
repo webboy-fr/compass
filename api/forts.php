@@ -1,6 +1,6 @@
 <?php
 /**
- * Minimal forts API for future front usage.
+ * Forts API.
  */
 declare(strict_types=1);
 
@@ -14,15 +14,26 @@ try {
     }
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $token = pcw_string($_GET['token'] ?? '', '', 128);
+        $playerrow = pcw_find_player_by_token($db, $token);
+        if (!$playerrow) {
+            pcw_json_response(['error' => 'Authentication required.'], 401);
+        }
+
         $body = pcw_read_json_body();
-        $stmt = $db->prepare('INSERT INTO pcw_forts (name, x, y, base_ideology_id, hp, enabled, sort_order) VALUES (:name, :x, :y, :base_ideology_id, :hp, 1, :sort_order)');
+        $name = trim(pcw_string($body['name'] ?? '', '', 80));
+        if ($name === '') {
+            throw new InvalidArgumentException('Le nom du bastion est obligatoire.');
+        }
+
+        $stmt = $db->prepare('INSERT INTO pcw_forts (name, x, y, base_ideology_id, hp, category, created_by_player_id, enabled, sort_order) VALUES (:name, :x, :y, NULL, 100, :category, :created_by_player_id, 1, :sort_order)');
         $stmt->execute([
-            'name' => pcw_string($body['name'] ?? '', 'Sans nom', 160),
-            'x' => pcw_float($body['x'] ?? 0, 0, -100, 100),
-            'y' => pcw_float($body['y'] ?? 0, 0, -100, 100),
-            'base_ideology_id' => pcw_string($body['base_ideology_id'] ?? '', '', 64) ?: null,
-            'hp' => pcw_int($body['hp'] ?? 100, 100, 1, 1000),
-            'sort_order' => pcw_int($body['sort_order'] ?? 0, 0, -10000, 10000),
+            'name' => $name,
+            'x' => pcw_float($body['x'] ?? 2.3522, 2.3522, -6, 10),
+            'y' => pcw_float($body['y'] ?? 48.8566, 48.8566, 41, 52),
+            'category' => 'player_created',
+            'created_by_player_id' => (int)$playerrow['id'],
+            'sort_order' => pcw_int($body['sort_order'] ?? 1000, 1000, -10000, 10000),
         ]);
         pcw_json_response(['ok' => true, 'id' => (int)$db->lastInsertId()], 201);
     }

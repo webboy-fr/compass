@@ -17,3 +17,7 @@ Dynamic action tooltips must stay readable without stacking duplicated Bootstrap
 - Fort action panel.
 - Movement action panel.
 - Selected fort information panel.
+
+## Persistent bastion labels
+
+Bastion names are now rendered permanently below each marker in OpenStreetMap mode. The labels are fixed-size HTML overlays, lightly styled, non-interactive, and wrap onto multiple lines for longer user-created names.

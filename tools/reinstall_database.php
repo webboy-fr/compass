@@ -209,7 +209,7 @@ function apply_migrations(PDO $pdo, string $migrationspath): void
 
         $insert = $pdo->prepare(
             'INSERT INTO pcw_migrations (migration, applied_at)
-             VALUES (:migration, NOW())
+             VALUES (:migration, UTC_TIMESTAMP())
              ON DUPLICATE KEY UPDATE applied_at = VALUES(applied_at)'
         );
 

@@ -1,0 +1,3 @@
+-- Front-end only migration marker.
+-- V14 stabilizes the OpenStreetMap/Leaflet rendering layer.
+-- No database schema or seed change is required.

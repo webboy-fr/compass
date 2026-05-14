@@ -4,6 +4,10 @@
 class PCWFort {
   constructor(data) {
     Object.assign(this, data);
+    this.influence = (this.influence && typeof this.influence === 'object') ? this.influence : {};
+    this.positivePower = Number(this.positivePower ?? this.powerPositive ?? this.power ?? this.hp ?? 0);
+    this.negativePower = Number(this.negativePower ?? this.powerNegative ?? 0);
+    this.power = this.getTotalPower();
   }
 
   static fromTemplate(template, index, maxHp) {
@@ -19,9 +23,12 @@ class PCWFort {
       y: template.y,
       baseIdeologyId: template.base,
       ownerIdeologyId: template.base,
+      category: template.category || 'institution',
       ownerActorId: null,
       hp: template.hp,
       maxHp,
+      positivePower: Number(template.positivePower ?? template.power ?? template.hp ?? 100),
+      negativePower: Number(template.negativePower ?? 0),
       influence
     });
   }
@@ -33,40 +40,43 @@ class PCWFort {
     return { ideologyId, score };
   }
 
-  applyInfluence(ideologyId, amount, maxInfluence, competitionDecay = 1) {
-    const decay = Number.isFinite(Number(competitionDecay)) ? Math.max(0, Number(competitionDecay)) : 1;
 
-    Object.keys(this.influence).forEach((existingIdeologyId) => {
-      if (existingIdeologyId === ideologyId) return;
-
-      const current = Number(this.influence[existingIdeologyId] || 0);
-      if (current <= 0) return;
-
-      const next = PCWMath.clamp(current - decay, 0, maxInfluence);
-      if (next <= 0) {
-        delete this.influence[existingIdeologyId];
-        return;
-      }
-
-      this.influence[existingIdeologyId] = next;
-    });
-
-    this.influence[ideologyId] = PCWMath.clamp((this.influence[ideologyId] || 0) + amount, 0, maxInfluence);
+  getTotalPower() {
+    return Number(this.positivePower || 0) - Number(this.negativePower || 0);
   }
 
-  moveToward(actor, amount, moveFactor) {
-    const ratio = PCWMath.clamp(moveFactor * (amount / 10), 0.025, 0.09);
-    this.x = PCWMath.clamp(this.x + (actor.x - this.x) * ratio, -95, 95);
-    this.y = PCWMath.clamp(this.y + (actor.y - this.y) * ratio, -95, 95);
+  addPower(amount = 1) {
+    const increment = Math.max(0, Number(amount || 0));
+    if (increment <= 0) return;
+    this.positivePower = Number(this.positivePower || 0) + increment;
+    this.power = this.getTotalPower();
+  }
+
+  removePower(amount = 1) {
+    const increment = Math.max(0, Number(amount || 0));
+    if (increment <= 0) return;
+    this.negativePower = Number(this.negativePower || 0) + increment;
+    this.power = this.getTotalPower();
+  }
+
+  applyInfluence(ideologyId, amount) {
+    if (!ideologyId) return;
+
+    const increment = Math.max(0, Number(amount || 0));
+    if (increment <= 0) return;
+
+    // Influence is now purely cumulative: adding points to one ideology never removes points from another.
+    this.influence[ideologyId] = Number(this.influence[ideologyId] || 0) + increment;
+    this.ownerIdeologyId = this.getLeader()?.ideologyId || null;
+    this.ownerActorId = null;
   }
 
   attack(amount) {
-    this.hp = PCWMath.clamp(this.hp - amount, 0, this.maxHp);
-    return this.hp <= 0;
+    this.removePower(amount);
   }
 
   repair(amount) {
-    this.hp = PCWMath.clamp(this.hp + amount, 0, this.maxHp);
+    this.addPower(amount);
   }
 
   drift(maxInfluence) {

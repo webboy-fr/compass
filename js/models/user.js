@@ -10,12 +10,12 @@ class PCWUser extends PCWActor {
       ideologyName: 'Non choisi',
       ideologyWeights: {},
       color: '#ffffff',
-      x: 0,
-      y: 0,
-      market: 0,
-      authority: 0,
-      baseMarket: 0,
-      baseAuthority: 0,
+      x: 2.3522,
+      y: 48.8566,
+      market: 2.3522,
+      authority: 48.8566,
+      baseMarket: 2.3522,
+      baseAuthority: 48.8566,
       energy: 0,
       influencePower: 0,
       attackPower: 0,
@@ -68,12 +68,12 @@ class PCWUser extends PCWActor {
       ideologyName: player.ideologyName || 'Non choisi',
       ideologyWeights: player.ideologyWeights || player.ideology_weights || {},
       color: player.color || '#ffffff',
-      x: Number(player.x || 0),
-      y: Number(player.y || 0),
-      market: Number(player.market ?? player.x ?? 0),
-      authority: Number(player.authority ?? player.y ?? 0),
-      baseMarket: Number(player.baseMarket ?? player.x ?? 0),
-      baseAuthority: Number(player.baseAuthority ?? player.y ?? 0),
+      x: Number(player.x || 2.3522),
+      y: Number(player.y || 48.8566),
+      market: Number(player.market ?? player.x ?? 2.3522),
+      authority: Number(player.authority ?? player.y ?? 48.8566),
+      baseMarket: Number(player.baseMarket ?? player.x ?? 2.3522),
+      baseAuthority: Number(player.baseAuthority ?? player.y ?? 48.8566),
       energy: Number(player.energy ?? 45),
       influencePower: Number(player.influencePower || 0),
       attackPower: Number(player.attackPower || 0),
@@ -110,16 +110,18 @@ class PCWUser extends PCWActor {
 
     if (dominant) {
       this.ideologyId = dominant.id;
-      this.color = dominant.color;
     }
 
-    const names = sorted.slice(0, 2)
+    const names = sorted.slice(0, 3)
       .map((entry) => byId.get(entry.id)?.name)
       .filter(Boolean);
     this.ideologyName = names.length ? names.join(' / ') : 'Profil mixte';
 
     let x = 0;
     let y = 0;
+    let colorR = 0;
+    let colorG = 0;
+    let colorB = 0;
     let influencePower = 0;
     let attackPower = 0;
     let supportPower = 0;
@@ -132,6 +134,10 @@ class PCWUser extends PCWActor {
       const ratio = entry.score / total;
       x += Number(ideology.x || 0) * ratio;
       y += Number(ideology.y || 0) * ratio;
+      const rgb = PCWUser.hexToRgb(ideology.color || '#ffffff');
+      colorR += rgb.r * ratio;
+      colorG += rgb.g * ratio;
+      colorB += rgb.b * ratio;
       influencePower += Number(ideology.influencePower || 0) * ratio;
       attackPower += Number(ideology.attackPower || 0) * ratio;
       supportPower += Number(ideology.supportPower || 0) * ratio;
@@ -145,6 +151,7 @@ class PCWUser extends PCWActor {
     this.authority = y;
     this.baseMarket = x;
     this.baseAuthority = y;
+    this.color = PCWUser.rgbToHex(Math.round(colorR), Math.round(colorG), Math.round(colorB));
     this.influencePower = Math.round(influencePower);
     this.attackPower = Math.round(attackPower);
     this.supportPower = Math.round(supportPower);
@@ -152,9 +159,42 @@ class PCWUser extends PCWActor {
     this.moveSpeed = Math.max(1, Number(moveSpeed || 10));
   }
 
+
+  static hexToRgb(hex) {
+    const safe = String(hex || '#ffffff').replace('#', '').trim();
+    const expanded = safe.length === 3 ? safe.split('').map((char) => char + char).join('') : safe;
+    const value = /^[0-9a-fA-F]{6}$/.test(expanded) ? expanded : 'ffffff';
+    return {
+      r: parseInt(value.slice(0, 2), 16),
+      g: parseInt(value.slice(2, 4), 16),
+      b: parseInt(value.slice(4, 6), 16)
+    };
+  }
+
+  static rgbToHex(r, g, b) {
+    const toHex = (value) => Math.max(0, Math.min(255, Number(value) || 0)).toString(16).padStart(2, '0');
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+  }
+
+  getInfluencePayload() {
+    const payload = {};
+    Object.entries(this.ideologyWeights || {}).forEach(([ideologyId, score]) => {
+      const amount = Math.max(0, Math.round(Number(score) || 0));
+      if (ideologyId && amount > 0) {
+        payload[ideologyId] = amount;
+      }
+    });
+
+    if (!Object.keys(payload).length && this.ideologyId) {
+      payload[this.ideologyId] = 1;
+    }
+
+    return payload;
+  }
+
   setCompassPosition(market, authority) {
-    this.market = PCWMath.clamp(Number(market), -100, 100);
-    this.authority = PCWMath.clamp(Number(authority), -100, 100);
+    this.market = PCWMath.clamp(Number(market), -6, 10);
+    this.authority = PCWMath.clamp(Number(authority), 41, 52);
     this.x = this.market;
     this.y = this.authority;
   }
@@ -165,18 +205,18 @@ class PCWUser extends PCWActor {
   }
 
   getSpecialAction() {
-    return this.playerClass || null;
+    return null;
   }
 
   startMovement(x, y) {
-    const targetX = PCWMath.clamp(Number(x), -100, 100);
-    const targetY = PCWMath.clamp(Number(y), -100, 100);
+    const targetX = PCWMath.clamp(Number(x), -6, 10);
+    const targetY = PCWMath.clamp(Number(y), 41, 52);
     const distance = Math.hypot(targetX - this.x, targetY - this.y);
     const speed = Math.max(1, Number(this.moveSpeed || 10));
 
-    // Movement speed is now treated as a max cruise speed.
-    // The ease-in/ease-out phases stay short so long trips do not feel sluggish.
-    const cruiseUnitsPerSecond = speed * 12;
+    // In OSM mode, x/y are longitude/latitude degrees, not abstract percentages.
+    // Keep movement smooth without making France-wide jumps instantaneous.
+    const cruiseUnitsPerSecond = speed * 0.18;
     const accelerationSeconds = 0.16;
     const duration = Math.max(0.32, (distance / cruiseUnitsPerSecond) + accelerationSeconds);
 

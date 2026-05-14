@@ -73,7 +73,7 @@ try {
 
         $stmt = $db->prepare(
             'INSERT INTO pcw_chat_messages (player_id, player_name, message, created_at)
-                  VALUES (:player_id, :player_name, :message, NOW())'
+                  VALUES (:player_id, :player_name, :message, UTC_TIMESTAMP())'
         );
         $stmt->execute([
             'player_id' => (int)$playerrow['id'],

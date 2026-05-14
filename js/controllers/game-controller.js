@@ -23,6 +23,8 @@ class PCWGameController {
     this.lastRemoteSyncAt = 0;
     this.lastActionClickAt = 0;
     this.isPlayerProfileRequired = false;
+    this.isMapDragging = false;
+    this.mapDragStart = null;
   }
 
   static async create(config) {
@@ -52,7 +54,7 @@ class PCWGameController {
     }
 
     const ideologyTotal = this.getPlayerIdeologyTotal();
-    return (!this.state.player.playerClass && !this.state.player.classId) || ideologyTotal !== 10;
+    return ideologyTotal !== 10;
   }
 
   openPlayerProfileIfSetupIsMissing() {
@@ -95,6 +97,20 @@ class PCWGameController {
 
   bindEvents() {
     this.renderer.elements.resetButton.addEventListener('click', () => this.resetGame());
+    if (this.renderer.elements.createFortButton) {
+      this.renderer.elements.createFortButton.addEventListener('click', () => this.toggleCreateFortMode());
+    }
+    if (this.renderer.elements.createFortModalClose) {
+      this.renderer.elements.createFortModalClose.addEventListener('click', () => this.renderer.closeCreateFortModal());
+    }
+    if (this.renderer.elements.createFortModal) {
+      this.renderer.elements.createFortModal.addEventListener('click', (event) => {
+        if (event.target === this.renderer.elements.createFortModal) this.renderer.closeCreateFortModal();
+      });
+    }
+    if (this.renderer.elements.createFortForm) {
+      this.renderer.elements.createFortForm.addEventListener('submit', (event) => this.handleCreateFortSubmit(event));
+    }
     if (this.renderer.elements.playerProfileButton) {
       this.renderer.elements.playerProfileButton.addEventListener('click', () => this.renderer.openPlayerClassModal());
     }
@@ -117,8 +133,21 @@ class PCWGameController {
     this.renderer.elements.marketSlider.addEventListener('input', () => this.updatePlayerCompass());
     this.renderer.elements.authoritySlider.addEventListener('input', () => this.updatePlayerCompass());
     document.body.addEventListener('click', (event) => this.closeDestructionModal(event));
-    this.renderer.elements.map.addEventListener('click', (event) => this.handleMapClick(event));
+    if (this.renderer.usingLeaflet && this.renderer.osmMap) {
+      this.renderer.osmMap.on('click', (event) => this.handleLeafletMapClick(event));
+    } else {
+      this.renderer.elements.map.addEventListener('click', (event) => this.handleMapClick(event));
+      this.renderer.elements.map.addEventListener('wheel', (event) => this.handleMapWheel(event), { passive: false });
+      this.renderer.elements.map.addEventListener('pointerdown', (event) => this.handleMapPointerDown(event));
+      window.addEventListener('pointermove', (event) => this.handleMapPointerMove(event));
+      window.addEventListener('pointerup', () => this.handleMapPointerUp());
+    }
     window.addEventListener('resize', () => {
+      if (this.renderer.usingLeaflet && this.renderer.osmMap) {
+        this.renderer.osmMap.invalidateSize();
+      } else {
+        this.renderer.setMapTransform(this.renderer.mapTransform);
+      }
       if (!this.state.paused) this.renderer.render();
     });
   }
@@ -144,44 +173,130 @@ class PCWGameController {
     this.renderOnly();
   }
 
-  handleMapClick(event) {
-    if (this.state.paused) return;
+  handleLeafletMapClick(event) {
+    if (this.isMapDragging) return;
 
-    // Keep the current fort selected when the user clicks the fort itself.
-    if (event.target.closest('.fort-token')) return;
+    const point = {
+      x: Number(event.latlng.lng.toFixed(6)),
+      y: Number(event.latlng.lat.toFixed(6))
+    };
 
-    // Keep the current fort selected when the user uses the action panel.
-    if (event.target.closest('#fortActionPanel')) return;
-
-    // Keep the move confirmation panel stable when the user clicks on it.
-    if (event.target.closest('#moveActionPanel')) return;
-
-    const mapRect = this.renderer.elements.map.getBoundingClientRect();
-    const clickX = event.clientX - mapRect.left;
-    const clickY = event.clientY - mapRect.top;
-
-    // Keep the current fort selected when the click is still close to the fort/action area.
-    // This prevents the mini action panel from disappearing while the user tries to click it.
-    const selectedFort = this.state.getSelectedFort();
-    if (selectedFort) {
-      const fortX = this.renderer.toPxX(selectedFort.x);
-      const fortY = this.renderer.toPxY(selectedFort.y);
-      const safeRadius = 125;
-
-      if (Math.hypot(clickX - fortX, clickY - fortY) <= safeRadius) return;
+    if (this.renderer.isCreateFortMode) {
+      this.renderer.setCreateFortMode(false);
+      this.renderer.openCreateFortModal(point.x, point.y);
+      return;
     }
-
-    const relativeX = (clickX / mapRect.width) * 200 - 100;
-    const relativeY = 100 - ((clickY / mapRect.height) * 200);
 
     this.state.selectedFortId = null;
     this.state.setNotice('');
-    this.renderer.openMoveActionPanel(relativeX, relativeY);
+    this.renderer.openMoveActionPanel(point.x, point.y);
     this.renderer.renderPanels();
   }
 
+  handleMapClick(event) {
+    if (this.state.paused || this.isMapDragging) return;
+    if (event.target.closest('.fort-token')) return;
+    if (event.target.closest('#fortActionPanel')) return;
+    if (event.target.closest('#moveActionPanel')) return;
 
-  handleMoveActionClick(event) {
+    const point = this.renderer.clientPointToMapPercent(event.clientX, event.clientY);
+
+    if (this.renderer.isCreateFortMode) {
+      this.renderer.setCreateFortMode(false);
+      this.renderer.openCreateFortModal(point.x, point.y);
+      return;
+    }
+
+    const selectedFort = this.state.getSelectedFort();
+    if (selectedFort) {
+      const fortX = this.renderer.toScreenX(selectedFort.x, selectedFort.y);
+      const fortY = this.renderer.toScreenY(selectedFort.y, selectedFort.x);
+      const mapRect = this.renderer.elements.map.getBoundingClientRect();
+      const clickX = event.clientX - mapRect.left;
+      const clickY = event.clientY - mapRect.top;
+      if (Math.hypot(clickX - fortX, clickY - fortY) <= 125) return;
+    }
+
+    this.state.selectedFortId = null;
+    this.state.setNotice('');
+    this.renderer.openMoveActionPanel(point.x, point.y);
+    this.renderer.renderPanels();
+  }
+
+  toggleCreateFortMode() {
+    this.renderer.setCreateFortMode(!this.renderer.isCreateFortMode);
+  }
+
+  handleMapWheel(event) {
+    event.preventDefault();
+    const rect = this.renderer.elements.map.getBoundingClientRect();
+    const current = this.renderer.mapTransform;
+    const oldScale = current.scale;
+    const nextScale = PCWMath.clamp(oldScale * (event.deltaY < 0 ? 1.16 : 0.86), 1, 14);
+    const pointerX = event.clientX - rect.left;
+    const pointerY = event.clientY - rect.top;
+    const worldX = (pointerX - current.x) / oldScale;
+    const worldY = (pointerY - current.y) / oldScale;
+    this.renderer.setMapTransform({
+      scale: nextScale,
+      x: pointerX - worldX * nextScale,
+      y: pointerY - worldY * nextScale
+    });
+  }
+
+  handleMapPointerDown(event) {
+    if (event.button !== 0) return;
+    if (event.target.closest('.fort-token, #fortActionPanel, #moveActionPanel')) return;
+    this.isMapDragging = false;
+    this.mapDragStart = {
+      clientX: event.clientX,
+      clientY: event.clientY,
+      x: this.renderer.mapTransform.x,
+      y: this.renderer.mapTransform.y
+    };
+  }
+
+  handleMapPointerMove(event) {
+    if (!this.mapDragStart) return;
+    const dx = event.clientX - this.mapDragStart.clientX;
+    const dy = event.clientY - this.mapDragStart.clientY;
+    if (Math.hypot(dx, dy) > 4) this.isMapDragging = true;
+    if (!this.isMapDragging) return;
+    this.renderer.setMapTransform({
+      scale: this.renderer.mapTransform.scale,
+      x: this.mapDragStart.x + dx,
+      y: this.mapDragStart.y + dy
+    });
+  }
+
+  handleMapPointerUp() {
+    window.setTimeout(() => { this.isMapDragging = false; }, 0);
+    this.mapDragStart = null;
+  }
+
+  async handleCreateFortSubmit(event) {
+    event.preventDefault();
+    const name = String(this.renderer.elements.createFortName.value || '').trim();
+    const x = Number(this.renderer.elements.createFortX.value || 0);
+    const y = Number(this.renderer.elements.createFortY.value || 0);
+    if (!name) {
+      this.renderer.elements.createFortMessage.textContent = 'Le nom est obligatoire.';
+      return;
+    }
+    const fort = PCWFort.fromTemplate({ name: name.slice(0, 80), x, y, base: null, hp: 100, category: 'player_created' }, Date.now(), this.config.maxHp);
+    fort.id = `fort_player_${Date.now()}`;
+    fort.category = 'player_created';
+    this.state.forts.push(fort);
+    this.state.addLog(`🏰 Nouveau bastion créé : ${fort.name}.`);
+    this.renderer.closeCreateFortModal();
+    await this.saveAndRender();
+    if (this.storage.createFort) {
+      try { await this.storage.createFort({ name: fort.name, x, y }); } catch (error) { console.warn('Remote fort creation failed.', error); }
+    }
+  }
+
+
+  async handleMoveActionClick(event) {
     const button = event.target.closest('[data-action="move-player"]');
     if (!button) return;
 
@@ -191,9 +306,44 @@ class PCWGameController {
     const x = Number(button.dataset.x || 0);
     const y = Number(button.dataset.y || 0);
 
-    this.simulation.movePlayerTo(x, y);
     this.renderer.closeMoveActionPanel();
-    this.saveAndRender();
+    this.lastLocalChangeAt = Date.now();
+
+    // Movement is authoritative on the server. Persist first, then animate locally
+    // using the same timeline returned by the API. This prevents the next polling
+    // tick from restoring the previous database coordinates.
+    try {
+      const result = this.storage && typeof this.storage.movePlayer === 'function'
+        ? await this.storage.movePlayer(x, y)
+        : null;
+      const movement = result && result.movement ? result.movement : null;
+
+      if (movement && this.state.player) {
+        this.state.player.x = Number(movement.fromX);
+        this.state.player.y = Number(movement.fromY);
+        this.state.player.market = this.state.player.x;
+        this.state.player.authority = this.state.player.y;
+        this.state.player.movementTarget = { x: Number(movement.toX), y: Number(movement.toY) };
+        this.state.player.movementAnimation = {
+          fromX: Number(movement.fromX),
+          fromY: Number(movement.fromY),
+          toX: Number(movement.toX),
+          toY: Number(movement.toY),
+          elapsed: 0,
+          duration: Math.max(0.001, Number(movement.durationMs || 0) / 1000),
+          easeRatio: 0.12
+        };
+      } else {
+        this.simulation.movePlayerTo(x, y);
+      }
+
+      this.state.setNotice(`Déplacement vers (${x.toFixed(4)}, ${y.toFixed(4)}) enregistré.`);
+      this.renderer.render();
+    } catch (error) {
+      console.warn('Unable to persist player movement destination.', error);
+      this.state.setNotice("Déplacement annulé : la position n'a pas pu être enregistrée côté serveur.");
+      this.renderer.renderPanels();
+    }
   }
 
   handleFortActionPointerDown(event) {
@@ -228,9 +378,8 @@ class PCWGameController {
 
     let queuedAction = null;
     if (action === 'influence-fort') queuedAction = this.simulation.sendPlayerAction('influence');
-    if (action === 'attack-fort') queuedAction = this.simulation.sendPlayerAction('attack');
-    if (action === 'support-fort') queuedAction = this.simulation.sendPlayerAction('support');
-    if (action === 'special-fort') queuedAction = this.simulation.sendPlayerSpecialAction(actionButton.dataset.specialAction);
+    if (action === 'power-up-fort') queuedAction = this.simulation.sendPlayerAction('power_up');
+    if (action === 'power-down-fort') queuedAction = this.simulation.sendPlayerAction('power_down');
 
     if (queuedAction) {
       this.lastActionClickAt = Date.now();
@@ -250,13 +399,8 @@ class PCWGameController {
 
 
   handleTargetInfoClick(event) {
-    const button = event.target.closest('[data-action="support-prepared"]');
-    if (!button) return;
-    event.preventDefault();
-    event.stopPropagation();
-    if (this.simulation.supportPreparedAction(button.dataset.preparedActionId)) {
-      this.saveAndRender();
-    }
+    // Special prepared actions have been removed from the simplified action system.
+    return;
   }
 
   handlePlayerClassModalClick(event) {
@@ -290,32 +434,7 @@ class PCWGameController {
       return;
     }
 
-    const resetButton = event.target.closest('[data-action="reset-class"]');
-    if (resetButton) {
-      if (window.confirm('Réinitialiser ta classe et les actions spéciales en préparation ?')) {
-        this.simulation.resetPlayerClass();
-        this.saveAndRender(false);
-        this.renderer.renderPlayerClassModal();
-      }
-      return;
-    }
-
-    const button = event.target.closest('[data-action="choose-class"]');
-    if (!button) return;
-
-    const classId = Number(button.dataset.classId);
-    const playerClass = (this.config.playerClasses || []).find((item) => Number(item.id) === classId);
-    if (!playerClass) return;
-
-    this.simulation.choosePlayerClass(playerClass);
-    this.isPlayerProfileRequired = this.playerNeedsProfileSetup();
-    this.renderer.isPlayerClassModalRequired = this.isPlayerProfileRequired;
-    if (this.renderer.elements.playerClassModalClose) {
-      this.renderer.elements.playerClassModalClose.disabled = this.isPlayerProfileRequired;
-      this.renderer.elements.playerClassModalClose.title = this.isPlayerProfileRequired ? 'Complète ton profil avant de fermer.' : 'Fermer';
-    }
-    this.saveAndRender(false);
-    this.renderer.renderPlayerClassModal();
+    // Classes and special actions are disabled in the simplified political action model.
   }
 
   getActionDebounceMs() {
@@ -429,7 +548,7 @@ class PCWGameController {
 
     const energyBeforeTick = Number(this.state.player?.energy || 0);
     const preparedBefore = JSON.stringify(this.state.preparedActions || []);
-    this.simulation.tick();
+    const botsLaunchedActions = this.simulation.tick({ updateBots: this.shouldRunBots() });
     const preparedChanged = preparedBefore !== JSON.stringify(this.state.preparedActions || []);
 
     // During a burst of clicks, action spending has priority over passive local
@@ -442,8 +561,8 @@ class PCWGameController {
     // Do not persist the passive simulation tick from every open browser.
     // The shared world is saved when a player acts and when a projectile impacts.
     // This keeps the database as a common source instead of letting each browser
-    // continuously overwrite the others with its own local drift.
-    if (preparedChanged) {
+    // continuously overwrite the others with its own passive local simulation.
+    if (preparedChanged || botsLaunchedActions) {
       this.saveState(true);
     }
     this.renderOnly();
@@ -453,6 +572,16 @@ class PCWGameController {
   startLoop() {
     if (this.timer) clearInterval(this.timer);
     this.timer = setInterval(() => this.tick(), this.config.tickMs);
+  }
+
+  shouldRunBots() {
+    if (!this.storage.apiAvailable) return true;
+    const players = (this.state.humanPlayers || [])
+      .filter((player) => player && player.id)
+      .sort((a, b) => Number(a.dbId || 0) - Number(b.dbId || 0) || String(a.id).localeCompare(String(b.id)));
+
+    if (!players.length) return true;
+    return String(players[0].id) === String(this.state.player?.id || '');
   }
 
   startSyncLoop() {
@@ -476,8 +605,7 @@ class PCWGameController {
         this.lastLocalChangeAt = Date.now();
       }
       if (finishedMovement) {
-        this.state.setNotice(`Position enregistrée : (${Math.round(this.state.player.x)}, ${Math.round(this.state.player.y)}).`);
-        this.saveState(true);
+        this.state.setNotice(`Position enregistrée : (${this.state.player.x.toFixed(4)}, ${this.state.player.y.toFixed(4)}).`);
       }
 
       if (!this.state.paused && this.simulation.updateProjectiles(deltaSeconds)) {
@@ -584,10 +712,43 @@ class PCWGameController {
       const notice = this.state.notice;
       const wasPaused = this.state.paused;
       const localEnergy = Number(this.state.player?.energy || 0);
+      const localPlayer = this.state.player;
       const keepLocalActionEnergy = this.isActionDebounceActive();
+      const keepLocalMovement = Boolean(localPlayer && (localPlayer.movementTarget || localPlayer.movementAnimation));
       const freshState = await this.storage.reloadRemote();
       this.mergeLocalProjectileProgress(freshState);
-      this.mergePreparedActions(freshState);
+      freshState.preparedActions = [];
+
+      if (keepLocalMovement && freshState.player) {
+        // The server persists the final destination immediately, but this browser
+        // still owns the smooth in-flight animation. Keep local movement fields
+        // during polling so the current player never snaps back to an older DB
+        // position before the animation finishes.
+        freshState.player.x = localPlayer.x;
+        freshState.player.y = localPlayer.y;
+        freshState.player.market = localPlayer.market;
+        freshState.player.authority = localPlayer.authority;
+        freshState.player.movementTarget = localPlayer.movementTarget;
+        freshState.player.movementAnimation = localPlayer.movementAnimation;
+
+        if (Array.isArray(freshState.humanPlayers)) {
+          freshState.humanPlayers = freshState.humanPlayers.map((player) => {
+            if (String(player.id) !== String(localPlayer.id)) {
+              return player;
+            }
+
+            return {
+              ...player,
+              x: localPlayer.x,
+              y: localPlayer.y,
+              market: localPlayer.market,
+              authority: localPlayer.authority,
+              movementTarget: localPlayer.movementTarget,
+              movementAnimation: localPlayer.movementAnimation
+            };
+          });
+        }
+      }
 
       if (keepLocalActionEnergy && freshState.player) {
         // During a click burst, action spending has priority over passive server regeneration.

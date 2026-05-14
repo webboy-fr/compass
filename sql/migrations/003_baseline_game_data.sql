@@ -11,12 +11,12 @@ INSERT INTO pcw_ideologies (
     move_speed,
     sort_order
 ) VALUES
-('liberal', 'Libéral', '#42d392', 72, -38, 12, 9, 8, 6, 12, 1),
-('socialdem', 'Social-démocrate', '#ffb84d', -38, -34, 11, 7, 11, 6, 7, 2),
-('ecologist', 'Écologiste', '#7bd957', -55, -56, 10, 7, 12, 6, 12, 3),
-('conservative', 'Conservateur', '#579dff', 38, 42, 10, 10, 8, 6, 12, 4),
-('sovereignist', 'Souverainiste', '#ff5d6c', -48, 58, 9, 12, 7, 6, 12, 5),
-('libertarian', 'Libertarien', '#36dce8', 84, -68, 13, 9, 7, 6, 12, 6)
+('liberal', 'Libéral', '#42d392', 54, 50, 12, 9, 8, 6, 12, 1),
+('socialdem', 'Social-démocrate', '#ffb84d', 45, 52, 11, 7, 11, 6, 7, 2),
+('ecologist', 'Écologiste', '#7bd957', 38, 50, 10, 7, 12, 6, 12, 3),
+('conservative', 'Conservateur', '#579dff', 58, 47, 10, 10, 8, 6, 12, 4),
+('sovereignist', 'Souverainiste', '#ff5d6c', 43, 58, 9, 12, 7, 6, 12, 5),
+('libertarian', 'Libertarien', '#36dce8', 62, 55, 13, 9, 7, 6, 12, 6)
 ON DUPLICATE KEY UPDATE
     name = VALUES(name),
     color = VALUES(color),

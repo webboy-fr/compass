@@ -13,6 +13,19 @@ class PCWStorageService {
     return `${this.config.stateApiUrl}${separator}token=${encodeURIComponent(this.currentPlayerToken)}`;
   }
 
+  getFortsUrl() {
+    const baseUrl = this.config.fortsApiUrl || this.config.stateApiUrl.replace('state.php', 'forts.php');
+    const separator = baseUrl.includes('?') ? '&' : '?';
+    return `${baseUrl}${separator}token=${encodeURIComponent(this.currentPlayerToken)}`;
+  }
+
+
+  getPlayersUrl() {
+    const baseUrl = this.config.playersApiUrl || this.config.stateApiUrl.replace('state.php', 'players.php');
+    const separator = baseUrl.includes('?') ? '&' : '?';
+    return `${baseUrl}${separator}token=${encodeURIComponent(this.currentPlayerToken)}`;
+  }
+
   getActionsUrl() {
     const baseUrl = this.config.actionsApiUrl || this.config.stateApiUrl.replace('state.php', 'actions.php');
     const separator = baseUrl.includes('?') ? '&' : '?';
@@ -119,6 +132,25 @@ class PCWStorageService {
     return PCWApiResponseParser.parse(response, 'State API');
   }
 
+
+  async movePlayer(x, y) {
+    if (!this.apiAvailable) {
+      return { ok: true, localOnly: true, x, y };
+    }
+
+    const response = await fetch(this.getPlayersUrl(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'move', x, y })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Players API move error ${response.status}`);
+    }
+
+    return PCWApiResponseParser.parse(response, 'Players API');
+  }
+
   async sendActions(actions) {
     if (!this.apiAvailable || !actions.length) {
       return { ok: true, localOnly: true, accepted: actions.length, rejected: 0 };
@@ -135,6 +167,19 @@ class PCWStorageService {
     }
 
     return PCWApiResponseParser.parse(response, 'Actions API');
+  }
+
+  async createFort(fort) {
+    if (!this.apiAvailable) return { ok: true, localOnly: true };
+    const response = await fetch(this.getFortsUrl(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(fort)
+    });
+    if (!response.ok) {
+      throw new Error(`Forts API error ${response.status}`);
+    }
+    return PCWApiResponseParser.parse(response, 'Forts API');
   }
 
   async reset() {

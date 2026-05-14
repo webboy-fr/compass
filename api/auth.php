@@ -71,7 +71,7 @@ try {
         }
 
         $token = pcw_create_auth_token();
-        $stmt = $db->prepare('INSERT INTO pcw_players (name, password_hash, auth_token, color, x, y, energy, enabled) VALUES (:name, :password_hash, :auth_token, :color, 0, 0, 45, 1)');
+        $stmt = $db->prepare('INSERT INTO pcw_players (name, password_hash, auth_token, color, x, y, energy, enabled) VALUES (:name, :password_hash, :auth_token, :color, 2.3522, 48.8566, 45, 1)');
         $stmt->execute([
             'name' => $name,
             'password_hash' => password_hash($password, PASSWORD_DEFAULT),
@@ -100,7 +100,7 @@ try {
         }
 
         $token = pcw_create_auth_token();
-        $stmt = $db->prepare('UPDATE pcw_players SET auth_token = :auth_token, updated_at = NOW() WHERE id = :id');
+        $stmt = $db->prepare('UPDATE pcw_players SET auth_token = :auth_token, updated_at = UTC_TIMESTAMP() WHERE id = :id');
         $stmt->execute([
             'auth_token' => $token,
             'id' => (int)$player['id'],
@@ -117,7 +117,7 @@ try {
     if ($action === 'logout') {
         $token = pcw_string($body['token'] ?? '', '', 128);
         if ($token !== '') {
-            $stmt = $db->prepare('UPDATE pcw_players SET auth_token = NULL, updated_at = NOW() WHERE auth_token = :auth_token');
+            $stmt = $db->prepare('UPDATE pcw_players SET auth_token = NULL, updated_at = UTC_TIMESTAMP() WHERE auth_token = :auth_token');
             $stmt->execute(['auth_token' => $token]);
         }
         pcw_json_response(['ok' => true]);

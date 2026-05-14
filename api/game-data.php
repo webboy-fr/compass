@@ -17,7 +17,7 @@ try {
     );
 
     $fortsstmt = $db->query(
-        'SELECT name, x, y, base_ideology_id, hp
+        'SELECT name, x, y, base_ideology_id, hp, category
            FROM pcw_forts
           WHERE enabled = 1
           ORDER BY sort_order ASC, id ASC'
@@ -54,29 +54,12 @@ try {
             'y' => (float)$row['y'],
             'base' => $row['base_ideology_id'] ?: null,
             'hp' => (int)$row['hp'],
+            'category' => $row['category'] ?? 'institution',
         ];
     }, $fortsstmt ? $fortsstmt->fetchAll() : []);
 
-    $playerclasses = array_map(static function (array $row): array {
-        return [
-            'id' => (int)$row['id'],
-            'slug' => $row['slug'],
-            'name' => $row['name'],
-            'description' => $row['description'] ?: '',
-            'imagePath' => $row['image_path'] ?: '',
-            'icon' => $row['icon'] ?: '🎭',
-            'actionName' => $row['action_name'],
-            'actionSlug' => $row['action_slug'],
-            'actionType' => $row['action_type'],
-            'actionDescription' => $row['action_description'] ?: '',
-            'energyCost' => (int)$row['energy_cost'],
-            'power' => (int)$row['power'],
-            'cooldownSeconds' => (int)$row['cooldown_seconds'],
-            'preparationSeconds' => (int)$row['preparation_seconds'],
-            'requiredSupports' => (int)$row['required_supports'],
-            'sortOrder' => (int)$row['sort_order'],
-        ];
-    }, $classesstmt ? $classesstmt->fetchAll() : []);
+    // Classes and special actions are intentionally disabled in the simplified action model.
+    $playerclasses = [];
 
     pcw_json_response([
         'ideologies' => $ideologies,

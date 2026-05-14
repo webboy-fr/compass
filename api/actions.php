@@ -37,6 +37,35 @@ function pcw_actions_get_ideology(PDO $db, array $player): ?array {
     return is_array($ideology) ? $ideology : null;
 }
 
+
+
+/**
+ * Return the full weighted influence payload for a player.
+ *
+ * One influence action sends every selected ideology score, for example
+ * 5 liberal + 5 sovereignist, instead of only the dominant ideology.
+ *
+ * @param array<string, mixed> $player
+ * @return array<string, int>
+ */
+function pcw_actions_get_influence_payload(array $player): array {
+    $weights = pcw_decode_ideology_weights($player['ideology_weights'] ?? null);
+    $payload = [];
+
+    foreach ($weights as $ideologyid => $score) {
+        $amount = max(0, (int)round((float)$score));
+        if ($ideologyid !== '' && $amount > 0) {
+            $payload[(string)$ideologyid] = $amount;
+        }
+    }
+
+    if (empty($payload) && !empty($player['ideology_id'])) {
+        $payload[(string)$player['ideology_id']] = 1;
+    }
+
+    return $payload;
+}
+
 /**
  * Return the configured power for an action type.
  *
@@ -56,18 +85,10 @@ function pcw_actions_get_player_class(PDO $db, array $player): ?array {
     return is_array($class) ? $class : null;
 }
 
-function pcw_actions_get_power(array $ideology, string $type): int {
-    if ($type === 'influence') {
-        return (int)$ideology['influence_power'];
+function pcw_actions_validate_action_type(string $type): void {
+    if (!in_array($type, ['influence', 'power_up', 'power_down'], true)) {
+        throw new InvalidArgumentException('Invalid action type.');
     }
-    if ($type === 'attack') {
-        return (int)$ideology['attack_power'];
-    }
-    if ($type === 'support') {
-        return (int)$ideology['repair_power'];
-    }
-
-    throw new InvalidArgumentException('Invalid action type.');
 }
 
 /**
@@ -77,18 +98,82 @@ function pcw_actions_get_power(array $ideology, string $type): int {
  * @param string $fortid
  * @return array<string, mixed>|null
  */
-function pcw_actions_find_fort(array $state, string $fortid): ?array {
+function pcw_actions_find_fort_index(array $state, string $fortid): ?int {
     if (empty($state['forts']) || !is_array($state['forts'])) {
         return null;
     }
 
-    foreach ($state['forts'] as $fort) {
+    foreach ($state['forts'] as $index => $fort) {
         if (is_array($fort) && (string)($fort['id'] ?? '') === $fortid) {
-            return $fort;
+            return (int)$index;
         }
     }
 
     return null;
+}
+
+/**
+ * Apply a cumulative ideology point directly to a fort in the authoritative state.
+ *
+ * @param array<string, mixed> $fort
+ * @param string $ideologyid
+ * @param int $amount
+ * @return array<string, mixed>
+ */
+function pcw_actions_apply_cumulative_point(array $fort, string $ideologyid, int $amount): array {
+    if ($ideologyid === '' || $amount <= 0) {
+        return $fort;
+    }
+
+    if (empty($fort['influence']) || !is_array($fort['influence'])) {
+        $fort['influence'] = [];
+    }
+
+    $fort['influence'][$ideologyid] = (int)($fort['influence'][$ideologyid] ?? 0) + $amount;
+
+    $leaderid = null;
+    $leaderscore = 0;
+    foreach ($fort['influence'] as $candidateid => $score) {
+        $score = (int)$score;
+        if ($score > $leaderscore) {
+            $leaderid = (string)$candidateid;
+            $leaderscore = $score;
+        }
+    }
+
+    $fort['ownerIdeologyId'] = $leaderid;
+    $fort['ownerActorId'] = null;
+
+    return $fort;
+}
+
+/**
+ * Apply a cumulative power point to a fort.
+ *
+ * @param array<string, mixed> $fort
+ * @param string $type
+ * @param int $amount
+ * @return array<string, mixed>
+ */
+function pcw_actions_apply_power_point(array $fort, string $type, int $amount): array {
+    if ($amount <= 0) {
+        return $fort;
+    }
+
+    $positive = (int)($fort['positivePower'] ?? $fort['powerPositive'] ?? $fort['power'] ?? $fort['hp'] ?? 0);
+    $negative = (int)($fort['negativePower'] ?? $fort['powerNegative'] ?? 0);
+
+    if ($type === 'power_up') {
+        $positive += $amount;
+    } elseif ($type === 'power_down') {
+        $negative += $amount;
+    }
+
+    $fort['positivePower'] = $positive;
+    $fort['negativePower'] = $negative;
+    $fort['power'] = $positive - $negative;
+
+    return $fort;
 }
 
 try {
@@ -113,8 +198,9 @@ try {
 
     $actions = array_slice($actions, 0, 50);
     $ideology = pcw_actions_get_ideology($db, $player);
+    $influencepayload = pcw_actions_get_influence_payload($player);
     $playerclass = pcw_actions_get_player_class($db, $player);
-    if ($ideology === null) {
+    if ($ideology === null || empty($influencepayload)) {
         pcw_json_response(['ok' => true, 'accepted' => 0, 'rejected' => count($actions), 'energy' => (int)$player['energy']]);
     }
 
@@ -137,6 +223,7 @@ try {
     $actorid = 'player_' . (int)$player['id'];
     $actorx = (float)$player['x'];
     $actory = (float)$player['y'];
+    $nowms = pcw_utc_now_ms();
 
     foreach ($actions as $action) {
         if (!is_array($action)) {
@@ -146,27 +233,19 @@ try {
 
         try {
             $type = pcw_string($action['type'] ?? '', '', 20);
-            $isspecial = !empty($action['isSpecial']);
-            $actionslug = pcw_string($action['actionSlug'] ?? '', '', 80);
+            $isspecial = false;
+            $actionslug = '';
             $fortid = pcw_string($action['fortId'] ?? '', '', 80);
-            $fort = pcw_actions_find_fort($state, $fortid);
-            if ($fort === null) {
+            $fortindex = pcw_actions_find_fort_index($state, $fortid);
+            if ($fortindex === null || empty($state['forts'][$fortindex]) || !is_array($state['forts'][$fortindex])) {
                 $rejected++;
                 continue;
             }
+            $fort = $state['forts'][$fortindex];
 
-            if ($isspecial) {
-                if ($playerclass === null || $actionslug === '' || $actionslug !== (string)$playerclass['action_slug']) {
-                    $rejected++;
-                    continue;
-                }
-                $type = (string)$playerclass['action_type'];
-                $amount = (int)$playerclass['power'];
-                $energycost = (int)$playerclass['energy_cost'];
-            } else {
-                $amount = pcw_actions_get_power($ideology, $type);
-                $energycost = $amount;
-            }
+            pcw_actions_validate_action_type($type);
+            $amount = $type === 'influence' ? array_sum($influencepayload) : 1;
+            $energycost = 1;
 
             if ($amount <= 0 || $energycost <= 0 || $energy < $energycost) {
                 $rejected++;
@@ -174,15 +253,41 @@ try {
             }
 
             $energy -= $energycost;
+
+            // The server is the source of truth for fort influence and power.
+            // The projectile remains visual only, so another browser cannot apply the same point twice.
+            if ($type === 'influence') {
+                foreach ($influencepayload as $ideologyid => $influenceamount) {
+                    $state['forts'][$fortindex] = pcw_actions_apply_cumulative_point($state['forts'][$fortindex], (string)$ideologyid, (int)$influenceamount);
+                }
+            } else {
+                $state['forts'][$fortindex] = pcw_actions_apply_power_point($state['forts'][$fortindex], $type, $amount);
+            }
+            $fort = $state['forts'][$fortindex];
+
             $projectileid = pcw_string($action['id'] ?? '', '', 120);
             if ($projectileid === '') {
-                $projectileid = 'projectile_' . time() . '_' . bin2hex(random_bytes(4));
+                $projectileid = 'projectile_' . pcw_utc_now_seconds() . '_' . bin2hex(random_bytes(4));
+            }
+
+            $alreadyqueued = false;
+            foreach ($state['projectiles'] as $existingprojectile) {
+                if (is_array($existingprojectile) && (string)($existingprojectile['id'] ?? '') === $projectileid) {
+                    $alreadyqueued = true;
+                    break;
+                }
+            }
+            if ($alreadyqueued) {
+                $accepted++;
+                continue;
             }
 
             $state['projectiles'][] = [
                 'id' => $projectileid,
                 'actorId' => $actorid,
                 'ideologyId' => (string)$ideology['id'],
+                'ideologyWeights' => $influencepayload,
+                'influencePayload' => $type === 'influence' ? $influencepayload : null,
                 'fortId' => $fortid,
                 'type' => $type,
                 'amount' => $amount,
@@ -190,11 +295,17 @@ try {
                 'y' => $actory,
                 'targetX' => (float)($fort['x'] ?? 0),
                 'targetY' => (float)($fort['y'] ?? 0),
-                'speed' => random_int(115, 170),
-                'isSpecial' => $isspecial,
-                'actionSlug' => $isspecial ? $actionslug : null,
-                'label' => $isspecial && $playerclass ? (string)$playerclass['action_name'] : null,
-                'icon' => $isspecial && $playerclass ? (string)$playerclass['icon'] : null,
+                // Coordinates are now longitude/latitude degrees on Leaflet/OpenStreetMap.
+                // A speed around one degree per second keeps projectiles visible across browsers.
+                'speed' => random_int(85, 145) / 100,
+                'createdAt' => $nowms,
+                'updatedAt' => $nowms,
+                'minTravelMs' => 900,
+                'serverApplied' => true,
+                'isSpecial' => false,
+                'actionSlug' => null,
+                'label' => null,
+                'icon' => null,
             ];
             $accepted++;
         } catch (Throwable $ignored) {
@@ -208,19 +319,19 @@ try {
     }
 
     $db->beginTransaction();
-    $stmt = $db->prepare('UPDATE pcw_players SET energy = :energy, updated_at = NOW() WHERE id = :id');
+    $stmt = $db->prepare('UPDATE pcw_players SET energy = :energy, updated_at = UTC_TIMESTAMP() WHERE id = :id');
     $stmt->execute([
         'energy' => $energy,
         'id' => (int)$player['id'],
     ]);
 
-    $worldstate = pcw_actions_world_state_only($state);
+    $worldstate = pcw_attach_utc_clock(pcw_actions_world_state_only($state));
     $json = json_encode($worldstate, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     if ($json === false) {
         throw new RuntimeException('Unable to encode updated state.');
     }
 
-    $stmt = $db->prepare('UPDATE pcw_game_states SET state_json = :statejson, updated_at = NOW() WHERE state_key = :statekey');
+    $stmt = $db->prepare('UPDATE pcw_game_states SET state_json = :statejson, updated_at = UTC_TIMESTAMP() WHERE state_key = :statekey');
     $stmt->execute([
         'statejson' => $json,
         'statekey' => $statekey,
